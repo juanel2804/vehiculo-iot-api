@@ -1,10 +1,12 @@
 """Punto de entrada: ensambla FastAPI, servicios, manejo de errores y routers."""
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import pymysql
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
 from app.exceptions import ErrorDominio
@@ -50,6 +52,14 @@ app = FastAPI(title="API IoT Vehículo (Dev local)", version="1.0.0", descriptio
 for modulo in (vehiculos, comandos, estado, movimientos, demos):
     app.include_router(modulo.router)
 app.include_router(ws.router)
+
+# Página web de control (HTML + JS que consume esta misma API y el WebSocket)
+app.mount("/control", StaticFiles(directory=Path(__file__).resolve().parent.parent / "web", html=True), name="control")
+
+
+@app.get("/", include_in_schema=False)
+def inicio():
+    return RedirectResponse("/control/")
 
 
 @app.get("/salud", tags=["Sistema"], summary="¿La API está arriba?")

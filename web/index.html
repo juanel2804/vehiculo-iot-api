@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Control · Vehículo IoT</title>
+<style>
+  :root{--bg:#0f1115;--panel:#171a21;--borde:#262b36;--texto:#e6e8ee;--tenue:#8b93a7;--acento:#f5a524;--ok:#3ecf8e;--mal:#f2555a;--azul:#4c8dff}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--texto)}
+  header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid var(--borde);background:var(--panel)}
+  h1{font-size:18px;margin:0}
+  h1 span{color:var(--acento)}
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--tenue);margin:0 0 12px}
+  select,input,button{font:inherit;color:var(--texto);background:#0f1218;border:1px solid var(--borde);border-radius:8px;padding:8px 10px}
+  button{cursor:pointer;transition:.12s}
+  button:hover:not(:disabled){border-color:var(--acento)}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  .barra{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:5px 10px;border-radius:999px;background:#0f1218;border:1px solid var(--borde)}
+  .punto{width:9px;height:9px;border-radius:50%;background:var(--mal)}
+  .punto.on{background:var(--ok)}
+  main{display:grid;grid-template-columns:minmax(320px,1.2fr) minmax(300px,1fr);gap:18px;padding:18px 22px;max-width:1300px;margin:auto}
+  @media (max-width:900px){main{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:16px}
+  .col{display:flex;flex-direction:column;gap:18px}
+  .estado{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .dato{background:#0f1218;border:1px solid var(--borde);border-radius:10px;padding:10px}
+  .dato small{display:block;color:var(--tenue);font-size:11px;margin-bottom:4px}
+  .dato b{font-size:17px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+  .cmd{padding:14px 10px;text-align:left;border-radius:10px;position:relative}
+  .cmd b{display:block;font-size:14px}
+  .cmd small{color:var(--tenue);font-size:12px}
+  .cmd kbd{position:absolute;top:8px;right:8px;font-size:11px;background:#232836;border-radius:4px;padding:2px 6px;color:var(--acento)}
+  .cmd.activo{border-color:var(--acento);box-shadow:0 0 0 1px var(--acento) inset}
+  .cmd.detener{border-color:#5a2a2d}
+  .cmd.detener b{color:var(--mal)}
+  .demo{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;border:1px solid var(--borde);border-radius:10px;margin-bottom:8px}
+  .demo small{color:var(--tenue)}
+  .progreso{height:8px;background:#0f1218;border-radius:99px;overflow:hidden;margin:10px 0 4px}
+  .progreso div{height:100%;width:0;background:var(--acento);transition:width .25s}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  td,th{padding:6px 4px;border-bottom:1px solid var(--borde);text-align:left}
+  th{color:var(--tenue);font-weight:500}
+  #log{height:260px;overflow:auto;font:12px/1.5 Consolas,monospace;background:#0b0d11;border-radius:8px;padding:8px}
+  #log div{white-space:pre-wrap;word-break:break-word}
+  .t-mov{color:var(--acento)} .t-demo{color:var(--azul)} .t-err{color:var(--mal)} .t-ok{color:var(--ok)}
+  #aviso{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);padding:10px 16px;border-radius:8px;background:#2a1517;border:1px solid var(--mal);display:none}
+  #aviso.ok{background:#11261c;border-color:var(--ok)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Control del <span>vehículo IoT</span></h1>
+  <div class="barra">
+    <select id="vehiculo" title="Vehículo"></select>
+    <input id="llave" type="password" placeholder="X-API-Key" size="22" autocomplete="off">
+    <span class="pill"><span id="wsPunto" class="punto"></span><span id="wsTexto">WebSocket desconectado</span></span>
+  </div>
+</header>
+
+<main>
+  <div class="col">
+    <section class="panel">
+      <h2>Estado actual</h2>
+      <div class="estado">
+        <div class="dato"><small>Último comando</small><b id="eComando">—</b></div>
+        <div class="dato"><small>Vehículo conectado</small><b id="eConectado">—</b></div>
+        <div class="dato"><small>Actualizado (UTC)</small><b id="eFecha" style="font-size:14px">—</b></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Comandos <small style="text-transform:none;letter-spacing:0">· clic o tecla</small></h2>
+      <div id="comandos" class="grid"></div>
+    </section>
+
+    <section class="panel">
+      <h2>DEMO</h2>
+      <div id="demos"></div>
+      <div id="demoVivo" style="display:none">
+        <div class="barra" style="justify-content:space-between">
+          <span id="demoTexto">—</span>
+          <button id="btnCancelar">Cancelar DEMO</button>
+        </div>
+        <div class="progreso"><div id="demoBarra"></div></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="col">
+    <section class="panel">
+      <h2>Historial · últimos 10 movimientos individuales</h2>
+      <table><thead><tr><th>#</th><th>Comando</th><th>Origen</th><th>Fecha (UTC)</th></tr></thead><tbody id="historial"></tbody></table>
+    </section>
+    <section class="panel">
+      <h2>Eventos WebSocket</h2>
+      <div id="log"></div>
+    </section>
+  </div>
+</main>
+<div id="aviso"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const API = location.origin;
+const WS_URL = id => `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/vehiculos/${id}`;
+let vehiculo = null, ws = null, reintento = null, comandos = [], demoTotal = 0;
+
+$("llave").value = localStorage.getItem("iot_api_key") || "";
+$("llave").addEventListener("change", e => localStorage.setItem("iot_api_key", e.target.value.trim()));
+
+function aviso(texto, ok = false) {
+  const a = $("aviso"); a.textContent = texto; a.className = ok ? "ok" : ""; a.style.display = "block";
+  clearTimeout(a._t); a._t = setTimeout(() => a.style.display = "none", 3500);
+}
+
+async function api(ruta, opciones = {}) {
+  const headers = { "Content-Type": "application/json" };
+  if (opciones.llave) headers["X-API-Key"] = $("llave").value.trim();
+  const r = await fetch(API + ruta, { method: opciones.method || "GET", headers, body: opciones.body ? JSON.stringify(opciones.body) : undefined });
+  const datos = await r.json().catch(() => null);
+  if (!r.ok) {
+    const det = datos && datos.detail;
+    throw new Error(typeof det === "string" ? det : (det ? det.map(d => d.msg).join("; ") : `HTTP ${r.status}`));
+  }
+  return datos;
+}
+
+function log(texto, clase = "") {
+  const d = document.createElement("div");
+  d.className = clase; d.textContent = `${new Date().toLocaleTimeString()}  ${texto}`;
+  $("log").prepend(d);
+  while ($("log").children.length > 200) $("log").lastChild.remove();
+}
+
+function pintarEstado(e) {
+  $("eComando").textContent = e && e.comando ? `${e.comando} (${e.codigo})` : "Sin estado";
+  $("eConectado").textContent = e ? (e.conectado ? "Sí" : "No") : "—";
+  $("eFecha").textContent = e && e.fecha_actualizacion ? e.fecha_actualizacion.replace("T", " ") : "—";
+  document.querySelectorAll(".cmd").forEach(b => b.classList.toggle("activo", e && +b.dataset.id === e.id_comando));
+}
+
+const tecla = c => ((c.descripcion || "").match(/tecla\s+([A-Za-z0-9])/i) || [])[1]?.toUpperCase();
+
+function pintarComandos() {
+  $("comandos").innerHTML = "";
+  comandos.filter(c => c.activo).forEach(c => {
+    const b = document.createElement("button");
+    b.className = "cmd" + (c.nombre.toUpperCase() === "DETENER" ? " detener" : "");
+    b.dataset.id = c.id_comando;
+    const k = tecla(c);
+    b.innerHTML = `${k ? `<kbd>${k}</kbd>` : ""}<b></b><small>código ${c.codigo}</small>`;
+    b.querySelector("b").textContent = c.nombre.replaceAll("_", " ");
+    b.title = c.descripcion || "";
+    b.onclick = () => mover(c);
+    $("comandos").append(b);
+  });
+}
+
+async function mover(c) {
+  try {
+    // el estado y el historial se refrescan al llegar el evento "movimiento" por WebSocket
+    await api("/movimientos", { method: "POST", llave: true, body: { id_vehiculo: vehiculo, id_comando: c.id_comando, origen: "WEB" } });
+  } catch (e) { aviso(e.message); }
+}
+
+async function cargarHistorial() {
+  const h = await api(`/vehiculos/${vehiculo}/historial`);
+  $("historial").innerHTML = h.length ? "" : `<tr><td colspan="4" style="color:var(--tenue)">Sin movimientos</td></tr>`;
+  h.forEach(r => {
+    const tr = document.createElement("tr");
+    [r.id_historial, r.comando ?? "—", r.origen, (r.fecha_hora || "").replace("T", " ")].forEach(v => {
+      const td = document.createElement("td"); td.textContent = v; tr.append(td);
+    });
+    $("historial").append(tr);
+  });
+}
+
+async function cargarDemos() {
+  const demos = await api(`/vehiculos/${vehiculo}/demos`);
+  $("demos").innerHTML = demos.length ? "" : `<small style="color:var(--tenue)">Este vehículo no tiene DEMO.</small>`;
+  for (const d of demos) {
+    const movs = await api(`/vehiculos/${vehiculo}/demos/${d.id_demo}/movimientos`);
+    const seg = movs.reduce((s, m) => s + m.duracion_ms + m.pausa_ms, 0) / 1000;
+    const div = document.createElement("div"); div.className = "demo";
+    div.innerHTML = `<div><b></b><br><small>${movs.length} movimientos · ~${seg.toFixed(1)} s${d.activo ? "" : " · inactiva"}</small></div>`;
+    div.querySelector("b").textContent = d.nombre;
+    const b = document.createElement("button"); b.textContent = "Iniciar"; b.className = "btnDemo";
+    b.disabled = !d.activo || !movs.length;
+    b.onclick = async () => {
+      try { await api(`/vehiculos/${vehiculo}/demos/${d.id_demo}/iniciar`, { method: "POST", llave: true }); }
+      catch (e) { aviso(e.message); }
+    };
+    div.append(b); $("demos").append(div);
+  }
+}
+
+function demoEnCurso(activa, texto = "", pct = 0) {
+  $("demoVivo").style.display = activa ? "block" : "none";
+  document.querySelectorAll(".btnDemo, .cmd").forEach(b => { if (activa) b.disabled = true; });
+  if (!activa) { pintarComandos(); cargarDemos(); }
+  $("demoTexto").textContent = texto; $("demoBarra").style.width = pct + "%";
+}
+
+$("btnCancelar").onclick = async () => {
+  try { await api(`/vehiculos/${vehiculo}/demos/cancelar`, { method: "POST", llave: true }); }
+  catch (e) { aviso(e.message); }
+};
+
+function conectarWS() {
+  clearTimeout(reintento);
+  if (ws) { ws.onclose = null; ws.close(); }
+  const id = vehiculo;
+  ws = new WebSocket(WS_URL(id));
+  ws.onopen = () => { $("wsPunto").classList.add("on"); $("wsTexto").textContent = `WebSocket · vehículo ${id}`; };
+  ws.onclose = () => {
+    $("wsPunto").classList.remove("on"); $("wsTexto").textContent = "Reconectando…";
+    if (id === vehiculo) reintento = setTimeout(conectarWS, 2000);
+  };
+  ws.onmessage = ev => manejar(JSON.parse(ev.data));
+}
+
+function manejar(m) {
+  switch (m.tipo) {
+    case "estado_inicial":
+      pintarEstado(m.estado); log("Conectado: estado inicial recibido", "t-ok");
+      if (m.demo_en_ejecucion) demoEnCurso(true, `DEMO ${m.demo_en_ejecucion} en ejecución`, 0);
+      break;
+    case "movimiento":
+      log(`MOVIMIENTO ${m.comando} (${m.codigo}) · origen ${m.origen}`, "t-mov");
+      pintarEstado({ id_comando: m.id_comando, comando: m.comando, codigo: m.codigo, conectado: $("eConectado").textContent === "Sí", fecha_actualizacion: m.timestamp.slice(0, 19) });
+      cargarHistorial();
+      break;
+    case "conexion":
+      $("eConectado").textContent = m.conectado ? "Sí" : "No"; log(`Conexión del vehículo: ${m.conectado}`, "t-ok");
+      break;
+    case "demo_inicio":
+      demoTotal = m.total_movimientos; demoEnCurso(true, `DEMO ${m.id_demo} · iniciando`, 0);
+      log(`DEMO ${m.id_demo} inicia · ${m.total_movimientos} movimientos`, "t-demo");
+      break;
+    case "demo_movimiento":
+      demoEnCurso(true, `DEMO ${m.id_demo} · ${m.orden}/${m.total_movimientos} · ${m.comando}`, 100 * m.orden / m.total_movimientos);
+      pintarEstado({ id_comando: m.id_comando, comando: m.comando, codigo: m.codigo, conectado: $("eConectado").textContent === "Sí", fecha_actualizacion: m.timestamp.slice(0, 19) });
+      log(`  ${m.orden}/${m.total_movimientos} ${m.comando} · ${m.duracion_ms} ms + pausa ${m.pausa_ms} ms`, "t-demo");
+      break;
+    case "demo_fin":
+      log(`DEMO ${m.id_demo} terminada (no se agregó al historial)`, "t-ok"); demoEnCurso(false);
+      break;
+    case "demo_cancelada":
+      log(`DEMO ${m.id_demo} cancelada${m.estado_detenido ? " · estado en DETENER" : ""}`, "t-err"); demoEnCurso(false);
+      refrescarEstado();
+      break;
+    case "demo_error":
+    case "error":
+      log(`ERROR: ${m.detalle}`, "t-err"); demoEnCurso(false); aviso(m.detalle);
+      break;
+    case "pong": break;
+    default: log(JSON.stringify(m));
+  }
+}
+
+async function refrescarEstado() { pintarEstado(await api(`/vehiculos/${vehiculo}/estado`)); }
+
+async function elegirVehiculo(id) {
+  vehiculo = +id; localStorage.setItem("iot_vehiculo", id);
+  $("log").innerHTML = "";
+  try {
+    comandos = await api(`/vehiculos/${vehiculo}/comandos`);
+    pintarComandos(); demoEnCurso(false);
+    await Promise.all([cargarHistorial(), refrescarEstado()]);
+    conectarWS();
+  } catch (e) { aviso(e.message); }
+}
+
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
+  const c = comandos.find(c => c.activo && tecla(c) === e.key.toUpperCase());
+  const boton = c && document.querySelector(`.cmd[data-id="${c.id_comando}"]`);
+  if (boton && !boton.disabled) { e.preventDefault(); boton.click(); }
+});
+
+(async () => {
+  try {
+    const vs = await api("/vehiculos");
+    $("vehiculo").innerHTML = "";
+    vs.forEach(v => { const o = new Option(`${v.id_vehiculo} · ${v.nombre}${v.activo ? "" : " (inactivo)"}`, v.id_vehiculo); $("vehiculo").add(o); });
+    const guardado = localStorage.getItem("iot_vehiculo");
+    if (guardado && vs.some(v => v.id_vehiculo == guardado)) $("vehiculo").value = guardado;
+    $("vehiculo").onchange = e => elegirVehiculo(e.target.value);
+    if (vs.length) elegirVehiculo($("vehiculo").value);
+    if (!$("llave").value) aviso("Escribe tu X-API-Key arriba para poder mover el vehículo", true);
+  } catch (e) { aviso("No se pudo conectar con la API: " + e.message); }
+})();
+</script>
+</body>
+</html>

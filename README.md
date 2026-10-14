@@ -15,6 +15,9 @@ uvicorn app.main:app --reload --port 8000
 ```
 
 * Swagger UI: <http://localhost:8000/docs>
+* Página de control: <http://localhost:8000/control/> — botones (y teclas W/S/A/D/J/L/R/F/P) para mover el vehículo,
+  estado e historial en vivo, DEMO con barra de progreso y cancelación, y registro de eventos WebSocket.
+  Escribe la `X-API-Key` arriba a la derecha (se guarda solo en tu navegador).
 * El Security Group de RDS debe permitir MySQL TCP 3306 desde tu IP (My IP).
 * Se recomienda un usuario con privilegios mínimos: `sql/01_usuario_api.sql` crea `api_iot` solo con `EXECUTE`.
 * `.env` está en `.gitignore`: nunca se sube. `.env.example` no lleva secretos.
