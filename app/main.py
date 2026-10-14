@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pymysql
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -48,6 +49,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="API IoT Vehículo (Dev local)", version="1.0.0", description=DESCRIPCION,
               openapi_tags=ETIQUETAS, lifespan=lifespan)
+
+# La página publicada (https://juanel2804.github.io/...) llama a esta API local desde el navegador
+# (allow_private_network: el navegador deja que una página pública hable con la API en localhost)
+app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in get_settings().cors_origins.split(",") if o.strip()],
+                   allow_methods=["GET", "POST"], allow_headers=["Content-Type", "X-API-Key"], allow_private_network=True)
+
 
 for modulo in (vehiculos, comandos, estado, movimientos, demos):
     app.include_router(modulo.router)

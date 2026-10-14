@@ -159,6 +159,7 @@ input.hud:focus,select.hud:focus{border-color:var(--cian);box-shadow:0 0 0 2px r
 <div class="top">
   <div class="logo">RETRO-X<small>IOT COMMAND LINK</small></div>
   <div class="esp"></div>
+  <input id="apiBase" class="hud" size="20" title="URL de la API (FastAPI corriendo en tu computadora)" style="display:none">
   <select id="vehiculo" class="hud" title="Vehículo"></select>
   <input id="llave" class="hud" type="password" placeholder="X-API-KEY" size="18" autocomplete="off" title="Llave de control">
   <div class="chip"><div id="senal" class="senal"><i></i><i></i><i></i><i></i></div><span id="enlace">SIN ENLACE</span></div>
@@ -251,7 +252,16 @@ input.hud:focus,select.hud:focus{border-color:var(--cian);box-shadow:0 0 0 2px r
 <script>
 /* ================== utilidades ================== */
 const $ = id => document.getElementById(id);
-const WS_URL = id => `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/vehiculos/${id}`;
+// Servida por la propia API (/control) usa el mismo origen; publicada (GitHub Pages) apunta a la API local.
+const DESDE_API = location.pathname.startsWith("/control");
+const API_BASE = DESDE_API ? location.origin
+  : (new URLSearchParams(location.search).get("api") || localStorage.getItem("iot_api_base") || "http://localhost:8000").replace(/\/+$/, "");
+const WS_URL = id => `${API_BASE.replace(/^http/, "ws")}/ws/vehiculos/${id}`;
+if (!DESDE_API) {
+  const campo = document.getElementById("apiBase");
+  campo.style.display = ""; campo.value = API_BASE;
+  campo.addEventListener("change", e => { localStorage.setItem("iot_api_base", e.target.value.trim()); location.reload(); });
+}
 const norm = s => (s || "").toUpperCase().replace(/\s+/g, "_");
 let vehiculo = null, ws = null, reintento = null, comandos = [], porNombre = {}, demoActiva = null;
 
@@ -272,7 +282,7 @@ function term(texto, clase = "") {
 async function api(ruta, op = {}) {
   const headers = { "Content-Type": "application/json" };
   if (op.llave) headers["X-API-Key"] = $("llave").value.trim();
-  const r = await fetch(ruta, { method: op.method || "GET", headers, body: op.body ? JSON.stringify(op.body) : undefined });
+  const r = await fetch(API_BASE + ruta, { method: op.method || "GET", headers, body: op.body ? JSON.stringify(op.body) : undefined });
   const d = await r.json().catch(() => null);
   if (!r.ok) {
     const det = d && d.detail;
@@ -607,7 +617,10 @@ async function elegirVehiculo(id) {
     $("vehiculo").onchange = e => elegirVehiculo(e.target.value);
     if (vs.length) await elegirVehiculo($("vehiculo").value);
     if (!$("llave").value) toast("INGRESA TU X-API-KEY PARA ARMAR EL CONTROL", true);
-  } catch (e) { toast("SIN CONEXIÓN CON LA API: " + e.message); }
+  } catch (e) {
+    toast(DESDE_API ? "SIN CONEXIÓN CON LA API: " + e.message : `NO RESPONDE LA API EN ${API_BASE} · LEVANTA UVICORN EN TU COMPU`);
+    term(`Sin conexión con ${API_BASE}: ${e.message}`, "err");
+  }
 })();
 </script>
 </body>

@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     db_pool_size: int = 5
     db_connect_timeout: int = 10
     api_key: str
+    # Orígenes web que pueden llamar a la API desde el navegador (la página publicada en GitHub Pages)
+    cors_origins: str = "https://juanel2804.github.io"
 
 
 @lru_cache
