@@ -41,8 +41,9 @@ def actualizar(id_vehiculo: int, datos: VehiculoUpdate, s: Servicios = Depends(g
 
 @router.post("/{id_vehiculo}/eliminar", response_model=Mensaje, dependencies=[Depends(exigir_llave)],
              responses={**RESP_404, **RESP_AUTH}, summary="Eliminar un vehículo (requiere X-API-Key)",
-             description="**SP:** `sp_obtener_vehiculo` y `sp_eliminar_vehiculo`. Borra en cascada sus comandos, estado, "
-                         "historial y DEMO. Operación destructiva: exige el header `X-API-Key`.")
+             description="**SP:** `sp_obtener_vehiculo`, `sp_obtener_demos`, `sp_eliminar_demo` y `sp_eliminar_vehiculo`, en una "
+                         "transacción. Primero elimina sus DEMO (sus movimientos bloquearían el borrado de los comandos) y "
+                         "después el vehículo, que borra en cascada comandos, estado e historial. Exige el header `X-API-Key`.")
 def eliminar(id_vehiculo: int, s: Servicios = Depends(get_servicios)):
     s.vehiculos.eliminar(id_vehiculo)
     return {"mensaje": "Vehículo eliminado"}

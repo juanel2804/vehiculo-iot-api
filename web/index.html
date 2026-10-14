@@ -2,296 +2,612 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Control · Vehículo IoT</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>RETRO-X · Control remoto IoT</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  :root{--bg:#0f1115;--panel:#171a21;--borde:#262b36;--texto:#e6e8ee;--tenue:#8b93a7;--acento:#f5a524;--ok:#3ecf8e;--mal:#f2555a;--azul:#4c8dff}
-  *{box-sizing:border-box}
-  body{margin:0;font-family:system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--texto)}
-  header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;padding:14px 22px;border-bottom:1px solid var(--borde);background:var(--panel)}
-  h1{font-size:18px;margin:0}
-  h1 span{color:var(--acento)}
-  h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--tenue);margin:0 0 12px}
-  select,input,button{font:inherit;color:var(--texto);background:#0f1218;border:1px solid var(--borde);border-radius:8px;padding:8px 10px}
-  button{cursor:pointer;transition:.12s}
-  button:hover:not(:disabled){border-color:var(--acento)}
-  button:disabled{opacity:.45;cursor:not-allowed}
-  .barra{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-  .pill{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:5px 10px;border-radius:999px;background:#0f1218;border:1px solid var(--borde)}
-  .punto{width:9px;height:9px;border-radius:50%;background:var(--mal)}
-  .punto.on{background:var(--ok)}
-  main{display:grid;grid-template-columns:minmax(320px,1.2fr) minmax(300px,1fr);gap:18px;padding:18px 22px;max-width:1300px;margin:auto}
-  @media (max-width:900px){main{grid-template-columns:1fr}}
-  .panel{background:var(--panel);border:1px solid var(--borde);border-radius:12px;padding:16px}
-  .col{display:flex;flex-direction:column;gap:18px}
-  .estado{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  .dato{background:#0f1218;border:1px solid var(--borde);border-radius:10px;padding:10px}
-  .dato small{display:block;color:var(--tenue);font-size:11px;margin-bottom:4px}
-  .dato b{font-size:17px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
-  .cmd{padding:14px 10px;text-align:left;border-radius:10px;position:relative}
-  .cmd b{display:block;font-size:14px}
-  .cmd small{color:var(--tenue);font-size:12px}
-  .cmd kbd{position:absolute;top:8px;right:8px;font-size:11px;background:#232836;border-radius:4px;padding:2px 6px;color:var(--acento)}
-  .cmd.activo{border-color:var(--acento);box-shadow:0 0 0 1px var(--acento) inset}
-  .cmd.detener{border-color:#5a2a2d}
-  .cmd.detener b{color:var(--mal)}
-  .demo{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px;border:1px solid var(--borde);border-radius:10px;margin-bottom:8px}
-  .demo small{color:var(--tenue)}
-  .progreso{height:8px;background:#0f1218;border-radius:99px;overflow:hidden;margin:10px 0 4px}
-  .progreso div{height:100%;width:0;background:var(--acento);transition:width .25s}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  td,th{padding:6px 4px;border-bottom:1px solid var(--borde);text-align:left}
-  th{color:var(--tenue);font-weight:500}
-  #log{height:260px;overflow:auto;font:12px/1.5 Consolas,monospace;background:#0b0d11;border-radius:8px;padding:8px}
-  #log div{white-space:pre-wrap;word-break:break-word}
-  .t-mov{color:var(--acento)} .t-demo{color:var(--azul)} .t-err{color:var(--mal)} .t-ok{color:var(--ok)}
-  #aviso{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);padding:10px 16px;border-radius:8px;background:#2a1517;border:1px solid var(--mal);display:none}
-  #aviso.ok{background:#11261c;border-color:var(--ok)}
+:root{
+  --bg:#05070d; --cian:#00f0ff; --magenta:#ff2bd6; --ambar:#ffb627; --verde:#39ff88; --rojo:#ff3355;
+  --vidrio:rgba(14,22,38,.62); --linea:rgba(0,240,255,.18); --tenue:#6f86a8; --texto:#d9f4ff;
+  --hud:'Orbitron',system-ui,sans-serif; --ui:'Rajdhani',system-ui,sans-serif; --mono:'JetBrains Mono',Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{
+  font-family:var(--ui);color:var(--texto);background:var(--bg);overflow-x:hidden;
+  background-image:
+    radial-gradient(1200px 600px at 15% -10%,rgba(0,240,255,.13),transparent 60%),
+    radial-gradient(900px 600px at 110% 110%,rgba(255,43,214,.12),transparent 60%),
+    linear-gradient(rgba(0,240,255,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,240,255,.035) 1px,transparent 1px);
+  background-size:auto,auto,40px 40px,40px 40px;
+}
+body::after{ /* scanlines */
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+  background:repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0 1px,transparent 1px 3px);mix-blend-mode:overlay;
+}
+/* ---------- barra superior ---------- */
+.top{display:flex;align-items:center;gap:18px;padding:14px 26px;border-bottom:1px solid var(--linea);
+  background:linear-gradient(180deg,rgba(0,240,255,.07),transparent);backdrop-filter:blur(6px);position:sticky;top:0;z-index:20}
+.logo{font-family:var(--hud);font-weight:900;font-size:22px;letter-spacing:.18em;
+  background:linear-gradient(90deg,var(--cian),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 10px rgba(0,240,255,.35))}
+.logo small{display:block;font-family:var(--ui);font-weight:600;font-size:11px;letter-spacing:.35em;color:var(--tenue);-webkit-text-fill-color:var(--tenue)}
+.top .esp{flex:1}
+.chip{display:flex;align-items:center;gap:8px;font-family:var(--hud);font-size:11px;letter-spacing:.12em;padding:7px 12px;
+  border:1px solid var(--linea);border-radius:8px;background:var(--vidrio);white-space:nowrap}
+.chip b{color:var(--cian);font-weight:700}
+.senal{display:flex;gap:2px;align-items:flex-end;height:14px}
+.senal i{width:4px;background:#1d2a40;border-radius:1px}
+.senal i:nth-child(1){height:30%}.senal i:nth-child(2){height:55%}.senal i:nth-child(3){height:80%}.senal i:nth-child(4){height:100%}
+.senal.on i{background:var(--verde);box-shadow:0 0 6px var(--verde)}
+select.hud,input.hud{font-family:var(--hud);font-size:11px;letter-spacing:.1em;color:var(--texto);background:#060b16;
+  border:1px solid var(--linea);border-radius:8px;padding:8px 10px;outline:none}
+input.hud:focus,select.hud:focus{border-color:var(--cian);box-shadow:0 0 0 2px rgba(0,240,255,.15)}
+/* ---------- layout ---------- */
+.escena{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(330px,.85fr);gap:22px;padding:22px 26px;max-width:1500px;margin:auto}
+@media (max-width:1100px){.escena{grid-template-columns:1fr}}
+.panel{position:relative;background:var(--vidrio);border:1px solid var(--linea);border-radius:16px;backdrop-filter:blur(10px);
+  box-shadow:0 0 0 1px rgba(0,0,0,.4) inset,0 20px 60px rgba(0,0,0,.45)}
+.panel::before,.panel::after{content:"";position:absolute;width:18px;height:18px;border:2px solid var(--cian);opacity:.7}
+.panel::before{top:-1px;left:-1px;border-right:0;border-bottom:0;border-top-left-radius:16px}
+.panel::after{bottom:-1px;right:-1px;border-left:0;border-top:0;border-bottom-right-radius:16px}
+.titulo{font-family:var(--hud);font-size:11px;letter-spacing:.32em;color:var(--tenue);padding:14px 18px 0;display:flex;justify-content:space-between}
+.titulo b{color:var(--cian);font-weight:700}
+/* ---------- arena ---------- */
+.arena{position:relative;height:470px;margin:12px;border-radius:12px;overflow:hidden;border:1px solid rgba(0,240,255,.12);background:#03060c}
+.arena canvas{width:100%;height:100%;display:block}
+.hudTL,.hudTR,.hudBL,.hudBR{position:absolute;font-family:var(--mono);font-size:11px;color:var(--cian);text-shadow:0 0 6px rgba(0,240,255,.6);line-height:1.6}
+.hudTL{top:12px;left:14px}.hudTR{top:12px;right:14px;text-align:right}.hudBL{bottom:12px;left:14px}.hudBR{bottom:12px;right:14px;text-align:right}
+.etq{color:var(--tenue)}
+.cmdGrande{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-family:var(--hud);font-weight:900;font-size:20px;letter-spacing:.2em;
+  padding:6px 18px;border-radius:8px;border:1px solid rgba(0,240,255,.35);background:rgba(0,10,20,.6);text-shadow:0 0 12px var(--cian);white-space:nowrap}
+.cmdGrande.alto{color:var(--rojo);border-color:rgba(255,51,85,.5);text-shadow:0 0 12px var(--rojo)}
+.autopiloto{position:absolute;inset:0;display:none;align-items:flex-end;justify-content:center;padding-bottom:46px;pointer-events:none}
+.autopiloto.on{display:flex}
+.autopiloto span{font-family:var(--hud);font-size:12px;letter-spacing:.4em;color:var(--magenta);text-shadow:0 0 10px var(--magenta);animation:parpadeo 1.1s infinite}
+@keyframes parpadeo{50%{opacity:.25}}
+/* ---------- control remoto ---------- */
+.remoto{margin:46px 12px 14px;padding:22px 26px 26px;border-radius:30px 30px 60px 60px;position:relative;
+  background:linear-gradient(160deg,#131c2e,#090e19 60%,#0c1322);border:1px solid rgba(0,240,255,.2);
+  box-shadow:0 2px 0 rgba(255,255,255,.06) inset,0 -10px 30px rgba(0,0,0,.6) inset,0 25px 50px rgba(0,0,0,.55)}
+.remoto .antena{position:absolute;top:-34px;right:70px;width:8px;height:40px;border-radius:4px 4px 0 0;background:linear-gradient(#2a3a55,#111a2a)}
+.remoto .antena::before{content:"";position:absolute;top:-8px;left:-3px;width:14px;height:14px;border-radius:50%;background:var(--rojo);box-shadow:0 0 12px var(--rojo)}
+.remoto .antena.tx::before{background:var(--verde);box-shadow:0 0 16px var(--verde)}
+.cuerpo{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center}
+@media (max-width:640px){.cuerpo{grid-template-columns:1fr 1fr}.centro{grid-column:1/-1;order:-1}}
+.stick{display:flex;flex-direction:column;align-items:center;gap:10px}
+.stick .nombre{font-family:var(--hud);font-size:10px;letter-spacing:.3em;color:var(--tenue)}
+.base{position:relative;width:196px;height:196px;border-radius:50%;touch-action:none;cursor:grab;
+  background:radial-gradient(circle at 50% 50%,#0b1220 0 38%,#101a2c 39% 60%,#0a1120 61%);
+  border:2px solid rgba(0,240,255,.25);box-shadow:0 0 25px rgba(0,240,255,.08) inset,0 8px 20px rgba(0,0,0,.6)}
+.base::before{content:"";position:absolute;inset:14px;border-radius:50%;border:1px dashed rgba(0,240,255,.18)}
+.dir{position:absolute;font-family:var(--hud);font-size:9px;letter-spacing:.08em;color:#4a5f80;transition:.15s;pointer-events:none;text-align:center;line-height:1.2}
+.dir kbd{display:block;font-family:var(--mono);font-size:10px;color:var(--ambar);opacity:.8}
+.dir.n{top:6px;left:50%;transform:translateX(-50%)}.dir.s{bottom:6px;left:50%;transform:translateX(-50%)}
+.dir.o{left:6px;top:50%;transform:translateY(-50%)}.dir.e{right:6px;top:50%;transform:translateY(-50%)}
+.dir.activa{color:var(--cian);text-shadow:0 0 10px var(--cian)}
+.dir.off{opacity:.25}
+.perilla{position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#3d5577,#18233a 55%,#0b1222);border:2px solid rgba(0,240,255,.45);
+  box-shadow:0 0 18px rgba(0,240,255,.35),0 10px 18px rgba(0,0,0,.6);transition:transform .18s cubic-bezier(.3,1.6,.5,1)}
+.perilla::after{content:"";position:absolute;inset:16px;border-radius:50%;border:2px solid rgba(0,240,255,.5)}
+.base.arrastrando{cursor:grabbing}.base.arrastrando .perilla{transition:none;border-color:var(--cian)}
+.base.bloq{opacity:.35;pointer-events:none;filter:grayscale(.6)}
+.centro{display:flex;flex-direction:column;align-items:center;gap:14px;min-width:210px}
+.lcd{width:220px;padding:10px 12px;border-radius:10px;background:#071a12;border:1px solid #1d4d36;box-shadow:0 0 20px rgba(57,255,136,.12) inset;
+  font-family:var(--mono);font-size:11px;color:var(--verde);text-shadow:0 0 6px rgba(57,255,136,.6);line-height:1.55}
+.lcd .fila{display:flex;justify-content:space-between}
+.lcd .grande{font-family:var(--hud);font-size:14px;letter-spacing:.12em;margin:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.botonStop{width:96px;height:96px;border-radius:50%;cursor:pointer;border:none;font-family:var(--hud);font-weight:900;font-size:15px;letter-spacing:.15em;color:#fff;
+  background:radial-gradient(circle at 35% 30%,#ff7a8e,#ff2448 45%,#a3001c);
+  box-shadow:0 0 0 6px #1a0d12,0 0 0 8px rgba(255,51,85,.5),0 0 30px rgba(255,51,85,.55),0 10px 20px rgba(0,0,0,.6);transition:transform .08s}
+.botonStop:active,.botonStop.pulsado{transform:scale(.93)}
+.botonStop:disabled{filter:grayscale(1);opacity:.4;cursor:not-allowed}
+.interruptores{display:flex;gap:14px;align-items:center}
+.switch{display:flex;align-items:center;gap:8px;font-family:var(--hud);font-size:9px;letter-spacing:.2em;color:var(--tenue);cursor:pointer;user-select:none}
+.switch input{display:none}
+.switch .riel{width:38px;height:20px;border-radius:20px;background:#0a1120;border:1px solid rgba(0,240,255,.25);position:relative;transition:.2s}
+.switch .riel::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#3a4a66;transition:.2s}
+.switch input:checked+.riel{background:rgba(0,240,255,.15);border-color:var(--cian)}
+.switch input:checked+.riel::after{left:20px;background:var(--cian);box-shadow:0 0 10px var(--cian)}
+.aux{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:18px}
+.btnHud{font-family:var(--hud);font-size:10px;letter-spacing:.18em;color:var(--texto);padding:9px 14px;border-radius:8px;cursor:pointer;
+  background:linear-gradient(180deg,#14203a,#0b1222);border:1px solid rgba(0,240,255,.3);transition:.15s}
+.btnHud:hover:not(:disabled){border-color:var(--cian);box-shadow:0 0 14px rgba(0,240,255,.3)}
+.btnHud:disabled{opacity:.35;cursor:not-allowed}
+.btnHud.magenta{border-color:rgba(255,43,214,.45)}.btnHud.magenta:hover:not(:disabled){border-color:var(--magenta);box-shadow:0 0 14px rgba(255,43,214,.35)}
+.btnHud.rojo{border-color:rgba(255,51,85,.5);color:#ffb3c0}
+/* ---------- panel lateral ---------- */
+.lado{display:flex;flex-direction:column;gap:22px}
+.telemetria{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 18px 18px}
+.medidor{padding:10px 12px;border-radius:10px;border:1px solid rgba(0,240,255,.12);background:rgba(3,8,16,.6)}
+.medidor small{display:block;font-family:var(--hud);font-size:9px;letter-spacing:.25em;color:var(--tenue);margin-bottom:5px}
+.medidor b{font-family:var(--hud);font-size:15px;letter-spacing:.06em}
+.barraPala{height:6px;border-radius:6px;background:#0a1322;margin-top:8px;overflow:hidden}
+.barraPala div{height:100%;width:0;background:linear-gradient(90deg,var(--ambar),var(--magenta));box-shadow:0 0 10px var(--ambar);transition:width .2s}
+.demos{padding:12px 18px 18px;display:flex;flex-direction:column;gap:10px}
+.cartucho{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;border:1px solid rgba(255,43,214,.25);
+  background:linear-gradient(90deg,rgba(255,43,214,.08),transparent)}
+.anillo{--p:0;width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;font-family:var(--hud);font-size:11px;
+  background:conic-gradient(var(--magenta) calc(var(--p)*1%),#1a2033 0);box-shadow:0 0 12px rgba(255,43,214,.25)}
+.anillo span{width:36px;height:36px;border-radius:50%;background:#0a0f1c;display:grid;place-items:center}
+.cartucho .info{flex:1;min-width:0}
+.cartucho .info b{display:block;font-family:var(--hud);font-size:12px;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cartucho .info small{color:var(--tenue);font-size:13px}
+.lista{list-style:none;margin:0;padding:8px 18px 18px;max-height:290px;overflow:auto}
+.lista li{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,240,255,.07);font-size:15px}
+.lista li .id{font-family:var(--mono);font-size:11px;color:var(--tenue)}
+.lista li .org{font-family:var(--hud);font-size:9px;letter-spacing:.15em;padding:3px 7px;border-radius:5px;border:1px solid rgba(0,240,255,.25);color:var(--cian)}
+.lista li .hora{grid-column:2/4;font-family:var(--mono);font-size:10px;color:var(--tenue);margin-top:-6px}
+.lista li.nuevo{animation:entra .7s}
+@keyframes entra{from{background:rgba(0,240,255,.18)}to{background:transparent}}
+.terminal{margin:8px 14px 16px;height:220px;overflow:auto;padding:10px 12px;border-radius:10px;background:#02050a;border:1px solid rgba(0,240,255,.1);
+  font-family:var(--mono);font-size:11px;line-height:1.55}
+.terminal div{white-space:pre-wrap;word-break:break-word;color:#7f95b5}
+.terminal .mov{color:var(--cian)}.terminal .demo{color:var(--magenta)}.terminal .ok{color:var(--verde)}.terminal .err{color:var(--rojo)}
+.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,30px);opacity:0;transition:.25s;z-index:60;
+  font-family:var(--hud);font-size:11px;letter-spacing:.15em;padding:12px 18px;border-radius:10px;background:rgba(40,8,18,.92);border:1px solid var(--rojo);box-shadow:0 0 25px rgba(255,51,85,.35)}
+.toast.ver{opacity:1;transform:translate(-50%,0)}
+.toast.ok{background:rgba(6,30,20,.92);border-color:var(--verde);box-shadow:0 0 25px rgba(57,255,136,.3)}
+.pie{font-family:var(--hud);font-size:9px;letter-spacing:.3em;color:#3c4d6a;text-align:center;padding:4px 0 18px}
 </style>
 </head>
 <body>
-<header>
-  <h1>Control del <span>vehículo IoT</span></h1>
-  <div class="barra">
-    <select id="vehiculo" title="Vehículo"></select>
-    <input id="llave" type="password" placeholder="X-API-Key" size="22" autocomplete="off">
-    <span class="pill"><span id="wsPunto" class="punto"></span><span id="wsTexto">WebSocket desconectado</span></span>
-  </div>
-</header>
 
-<main>
-  <div class="col">
-    <section class="panel">
-      <h2>Estado actual</h2>
-      <div class="estado">
-        <div class="dato"><small>Último comando</small><b id="eComando">—</b></div>
-        <div class="dato"><small>Vehículo conectado</small><b id="eConectado">—</b></div>
-        <div class="dato"><small>Actualizado (UTC)</small><b id="eFecha" style="font-size:14px">—</b></div>
-      </div>
-    </section>
+<div class="top">
+  <div class="logo">RETRO-X<small>IOT COMMAND LINK</small></div>
+  <div class="esp"></div>
+  <select id="vehiculo" class="hud" title="Vehículo"></select>
+  <input id="llave" class="hud" type="password" placeholder="X-API-KEY" size="18" autocomplete="off" title="Llave de control">
+  <div class="chip"><div id="senal" class="senal"><i></i><i></i><i></i><i></i></div><span id="enlace">SIN ENLACE</span></div>
+  <div class="chip">LAT <b id="latencia">— ms</b></div>
+  <div class="chip"><b id="reloj">--:--:--</b></div>
+</div>
 
-    <section class="panel">
-      <h2>Comandos <small style="text-transform:none;letter-spacing:0">· clic o tecla</small></h2>
-      <div id="comandos" class="grid"></div>
-    </section>
+<div class="escena">
+  <!-- ======= Arena + control remoto ======= -->
+  <div class="panel">
+    <div class="titulo"><span>RADAR TÁCTICO · <b>SIMULACIÓN</b></span><span id="nombreVehiculo">—</span></div>
+    <div class="arena">
+      <canvas id="radar"></canvas>
+      <div id="cmdGrande" class="cmdGrande">—</div>
+      <div class="hudTL"><span class="etq">POS</span> <span id="hPos">0, 0</span><br><span class="etq">RUMBO</span> <span id="hRumbo">0°</span><br><span class="etq">CABINA</span> <span id="hCabina">0°</span></div>
+      <div class="hudTR"><span class="etq">CÓDIGO</span> <span id="hCodigo">—</span><br><span class="etq">ESTADO RDS</span> <span id="hFecha">—</span><br><span class="etq">ORIGEN</span> <span id="hOrigen">—</span></div>
+      <div class="hudBL"><span class="etq">MOTOR</span> <span id="hMotor">IDLE</span></div>
+      <div class="hudBR"><span class="etq">VEHÍCULO</span> <span id="hConectado">—</span></div>
+      <div id="autopiloto" class="autopiloto"><span>◆ AUTOPILOTO · DEMO EN CURSO ◆</span></div>
+    </div>
 
-    <section class="panel">
-      <h2>DEMO</h2>
-      <div id="demos"></div>
-      <div id="demoVivo" style="display:none">
-        <div class="barra" style="justify-content:space-between">
-          <span id="demoTexto">—</span>
-          <button id="btnCancelar">Cancelar DEMO</button>
+    <div class="remoto">
+      <div id="antena" class="antena"></div>
+      <div class="cuerpo">
+        <div class="stick">
+          <div class="nombre">TRACCIÓN</div>
+          <div class="base" id="stickIzq">
+            <div class="dir n" data-cmd="AVANZAR" data-lbl="▲ AVANZAR"></div><div class="dir s" data-cmd="RETROCEDER" data-lbl="RETROCEDER ▼"></div>
+            <div class="dir o" data-cmd="GIRO_IZQUIERDA" data-lbl="◀ GIRO"></div><div class="dir e" data-cmd="GIRO_DERECHA" data-lbl="GIRO ▶"></div>
+            <div class="perilla"></div>
+          </div>
         </div>
-        <div class="progreso"><div id="demoBarra"></div></div>
+
+        <div class="centro">
+          <div class="lcd">
+            <div class="fila"><span>TX</span><span id="lcdTx">LISTO</span></div>
+            <div class="grande" id="lcdCmd">—</div>
+            <div class="fila"><span id="lcdModo">MANUAL</span><span id="lcdHist">HIST 0/10</span></div>
+          </div>
+          <button id="btnStop" class="botonStop" title="DETENER (P / Espacio)">STOP</button>
+          <div class="interruptores">
+            <label class="switch" title="Al soltar el joystick o la tecla se envía DETENER"><input type="checkbox" id="freno" checked><span class="riel"></span>FRENO AL SOLTAR</label>
+          </div>
+        </div>
+
+        <div class="stick">
+          <div class="nombre">CABINA · PALA</div>
+          <div class="base" id="stickDer">
+            <div class="dir n" data-cmd="PALA_ARRIBA" data-lbl="▲ PALA"></div><div class="dir s" data-cmd="PALA_ABAJO" data-lbl="PALA ▼"></div>
+            <div class="dir o" data-cmd="ROTACION_IZQUIERDA" data-lbl="◀ CABINA"></div><div class="dir e" data-cmd="ROTACION_DERECHA" data-lbl="CABINA ▶"></div>
+            <div class="perilla"></div>
+          </div>
+        </div>
       </div>
-    </section>
+      <div class="aux" id="aux"></div>
+    </div>
   </div>
 
-  <div class="col">
-    <section class="panel">
-      <h2>Historial · últimos 10 movimientos individuales</h2>
-      <table><thead><tr><th>#</th><th>Comando</th><th>Origen</th><th>Fecha (UTC)</th></tr></thead><tbody id="historial"></tbody></table>
-    </section>
-    <section class="panel">
-      <h2>Eventos WebSocket</h2>
-      <div id="log"></div>
-    </section>
+  <!-- ======= Panel lateral ======= -->
+  <div class="lado">
+    <div class="panel">
+      <div class="titulo"><span>TELEMETRÍA</span><b id="tVehiculo">—</b></div>
+      <div class="telemetria">
+        <div class="medidor"><small>COMANDO ACTUAL</small><b id="tCmd">—</b></div>
+        <div class="medidor"><small>ENLACE VEHÍCULO</small><b id="tConectado">—</b></div>
+        <div class="medidor"><small>VELOCIDAD SIM</small><b id="tVel">0 u/s</b></div>
+        <div class="medidor"><small>PALA</small><b id="tPala">0%</b><div class="barraPala"><div id="tPalaBarra"></div></div></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="titulo"><span>SECUENCIAS AUTÓNOMAS · <b>DEMO</b></span></div>
+      <div class="demos" id="demos"></div>
+    </div>
+
+    <div class="panel">
+      <div class="titulo"><span>BITÁCORA · <b>ÚLTIMOS 10</b></span><span>INDIVIDUALES</span></div>
+      <ul class="lista" id="historial"></ul>
+    </div>
+
+    <div class="panel">
+      <div class="titulo"><span>ENLACE WEBSOCKET</span><b id="wsUrl">—</b></div>
+      <div class="terminal" id="terminal"></div>
+    </div>
   </div>
-</main>
-<div id="aviso"></div>
+</div>
+<div class="pie">API LOCAL · FASTAPI · AMAZON RDS · WEBSOCKET — PRÁCTICA 2.5</div>
+<div id="toast" class="toast"></div>
 
 <script>
+/* ================== utilidades ================== */
 const $ = id => document.getElementById(id);
-const API = location.origin;
 const WS_URL = id => `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/vehiculos/${id}`;
-let vehiculo = null, ws = null, reintento = null, comandos = [], demoTotal = 0;
+const norm = s => (s || "").toUpperCase().replace(/\s+/g, "_");
+let vehiculo = null, ws = null, reintento = null, comandos = [], porNombre = {}, demoActiva = null;
 
 $("llave").value = localStorage.getItem("iot_api_key") || "";
 $("llave").addEventListener("change", e => localStorage.setItem("iot_api_key", e.target.value.trim()));
+setInterval(() => $("reloj").textContent = new Date().toLocaleTimeString("es-MX", { hour12: false }), 500);
 
-function aviso(texto, ok = false) {
-  const a = $("aviso"); a.textContent = texto; a.className = ok ? "ok" : ""; a.style.display = "block";
-  clearTimeout(a._t); a._t = setTimeout(() => a.style.display = "none", 3500);
+function toast(texto, ok = false) {
+  const t = $("toast"); t.textContent = texto; t.className = "toast ver" + (ok ? " ok" : "");
+  clearTimeout(t._t); t._t = setTimeout(() => t.className = "toast" + (ok ? " ok" : ""), 3200);
 }
-
-async function api(ruta, opciones = {}) {
+function term(texto, clase = "") {
+  const d = document.createElement("div"); d.className = clase;
+  d.textContent = `[${new Date().toLocaleTimeString("es-MX", { hour12: false })}] ${texto}`;
+  $("terminal").prepend(d);
+  while ($("terminal").children.length > 150) $("terminal").lastChild.remove();
+}
+async function api(ruta, op = {}) {
   const headers = { "Content-Type": "application/json" };
-  if (opciones.llave) headers["X-API-Key"] = $("llave").value.trim();
-  const r = await fetch(API + ruta, { method: opciones.method || "GET", headers, body: opciones.body ? JSON.stringify(opciones.body) : undefined });
-  const datos = await r.json().catch(() => null);
+  if (op.llave) headers["X-API-Key"] = $("llave").value.trim();
+  const r = await fetch(ruta, { method: op.method || "GET", headers, body: op.body ? JSON.stringify(op.body) : undefined });
+  const d = await r.json().catch(() => null);
   if (!r.ok) {
-    const det = datos && datos.detail;
-    throw new Error(typeof det === "string" ? det : (det ? det.map(d => d.msg).join("; ") : `HTTP ${r.status}`));
+    const det = d && d.detail;
+    throw new Error(typeof det === "string" ? det : det ? det.map(x => x.msg).join("; ") : `HTTP ${r.status}`);
   }
-  return datos;
+  return d;
 }
 
-function log(texto, clase = "") {
-  const d = document.createElement("div");
-  d.className = clase; d.textContent = `${new Date().toLocaleTimeString()}  ${texto}`;
-  $("log").prepend(d);
-  while ($("log").children.length > 200) $("log").lastChild.remove();
+/* ================== simulación (radar) ================== */
+const cv = $("radar"), cx = cv.getContext("2d");
+const sim = { x: 0, y: 0, rumbo: -90, cabina: 0, pala: 0.35, cmd: "DETENER", hasta: 0, rastro: [] };
+const FISICA = {   // efecto visual de cada comando en la simulación (no es telemetría real)
+  AVANZAR: { v: 70 }, RETROCEDER: { v: -45 }, GIRO_IZQUIERDA: { giro: -75, v: 12 }, GIRO_DERECHA: { giro: 75, v: 12 },
+  ROTACION_IZQUIERDA: { cab: -90 }, ROTACION_DERECHA: { cab: 90 }, PALA_ARRIBA: { pala: 0.55 }, PALA_ABAJO: { pala: -0.55 },
+};
+function aplicarComando(nombre, durMs = 0) {
+  sim.cmd = norm(nombre); sim.hasta = durMs ? performance.now() + durMs : 0;
+}
+function ajustarCanvas() {
+  const r = cv.getBoundingClientRect(), dpr = devicePixelRatio || 1;
+  cv.width = r.width * dpr; cv.height = r.height * dpr; cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+addEventListener("resize", ajustarCanvas);
+
+let ultimo = performance.now(), barrido = 0;
+function cuadro(t) {
+  const dt = Math.min(0.05, (t - ultimo) / 1000); ultimo = t;
+  const W = cv.clientWidth, H = cv.clientHeight;
+  // física
+  let cmd = sim.cmd;
+  if (sim.hasta && t > sim.hasta) cmd = "DETENER";   // en DEMO: terminó la duración, ahora es pausa
+  const f = FISICA[cmd] || {};
+  sim.rumbo += (f.giro || 0) * dt;
+  sim.cabina = Math.max(-170, Math.min(170, sim.cabina + (f.cab || 0) * dt));
+  sim.pala = Math.max(0, Math.min(1, sim.pala + (f.pala || 0) * dt));
+  const v = f.v || 0, rad = sim.rumbo * Math.PI / 180;
+  sim.x += Math.cos(rad) * v * dt; sim.y += Math.sin(rad) * v * dt;
+  const lim = Math.min(W, H) * 0.42;            // el radar es un círculo: al salir, reaparece del lado contrario
+  const d = Math.hypot(sim.x, sim.y);
+  if (d > lim) { sim.x = -sim.x * (lim - 4) / d; sim.y = -sim.y * (lim - 4) / d; sim.rastro = []; }
+  if (v) { sim.rastro.push([sim.x, sim.y]); if (sim.rastro.length > 260) sim.rastro.shift(); }
+
+  // dibujo
+  cx.clearRect(0, 0, W, H);
+  const ox = W / 2, oy = H / 2 + 8, R = lim + 26;
+  const g = cx.createRadialGradient(ox, oy, 0, ox, oy, R);
+  g.addColorStop(0, "rgba(0,240,255,.07)"); g.addColorStop(1, "rgba(0,240,255,0)");
+  cx.fillStyle = g; cx.beginPath(); cx.arc(ox, oy, R, 0, 7); cx.fill();
+  cx.strokeStyle = "rgba(0,240,255,.14)"; cx.lineWidth = 1;
+  for (let i = 1; i <= 4; i++) { cx.beginPath(); cx.arc(ox, oy, R * i / 4, 0, 7); cx.stroke(); }
+  for (let a = 0; a < 360; a += 30) {
+    const r2 = a * Math.PI / 180; cx.beginPath(); cx.moveTo(ox, oy); cx.lineTo(ox + Math.cos(r2) * R, oy + Math.sin(r2) * R); cx.stroke();
+  }
+  barrido = (barrido + dt * 1.6) % (Math.PI * 2);
+  const sw = cx.createConicGradient ? cx.createConicGradient(barrido - 0.6, ox, oy) : null;
+  if (sw) {
+    sw.addColorStop(0, "rgba(0,240,255,0)"); sw.addColorStop(0.09, "rgba(0,240,255,.16)"); sw.addColorStop(0.1, "rgba(0,240,255,0)");
+    cx.fillStyle = sw; cx.beginPath(); cx.arc(ox, oy, R, 0, 7); cx.fill();
+  }
+  // rastro
+  cx.lineCap = "round";
+  for (let i = 1; i < sim.rastro.length; i++) {
+    const [x1, y1] = sim.rastro[i - 1], [x2, y2] = sim.rastro[i];
+    cx.strokeStyle = `rgba(255,43,214,${(i / sim.rastro.length) * 0.7})`; cx.lineWidth = 3;
+    cx.beginPath(); cx.moveTo(ox + x1, oy + y1); cx.lineTo(ox + x2, oy + y2); cx.stroke();
+  }
+  dibujarRetro(ox + sim.x, oy + sim.y, cmd, t);
+
+  // HUD
+  $("hPos").textContent = `${sim.x.toFixed(0)}, ${(-sim.y).toFixed(0)}`;
+  $("hRumbo").textContent = `${(((sim.rumbo + 90) % 360) + 360) % 360 | 0}°`;
+  $("hCabina").textContent = `${sim.cabina | 0}°`;
+  $("hMotor").textContent = v || f.giro ? "TRACCIÓN" : f.cab ? "GIRO CABINA" : f.pala ? "HIDRÁULICO" : "IDLE";
+  $("tVel").textContent = `${Math.abs(v)} u/s`;
+  $("tPala").textContent = `${Math.round(sim.pala * 100)}%`;
+  $("tPalaBarra").style.width = `${sim.pala * 100}%`;
+  requestAnimationFrame(cuadro);
+}
+function dibujarRetro(x, y, cmd, t) {
+  const brillo = cmd !== "DETENER";
+  cx.save(); cx.translate(x, y); cx.rotate((sim.rumbo + 90) * Math.PI / 180);
+  cx.shadowColor = brillo ? "#00f0ff" : "#ff3355"; cx.shadowBlur = 18;
+  // orugas
+  const fase = (t / 60) % 8;
+  for (const lado of [-1, 1]) {
+    cx.fillStyle = "#0b1a2a"; cx.strokeStyle = "#00f0ff"; cx.lineWidth = 1.5;
+    redondo(lado * 17 - 6, -24, 12, 48, 5); cx.fill(); cx.stroke();
+    cx.strokeStyle = "rgba(0,240,255,.5)"; cx.lineWidth = 1;
+    for (let k = -24 + (FISICA[cmd]?.v ? fase : 0); k < 24; k += 8) { cx.beginPath(); cx.moveTo(lado * 17 - 6, k); cx.lineTo(lado * 17 + 6, k); cx.stroke(); }
+  }
+  // chasis
+  cx.fillStyle = "#101d33"; cx.strokeStyle = "#7ff8ff"; cx.lineWidth = 1.5; redondo(-12, -18, 24, 36, 4); cx.fill(); cx.stroke();
+  // cabina + brazo (giran con la cabina)
+  cx.rotate(sim.cabina * Math.PI / 180);
+  const largo = 26 + sim.pala * 30;
+  cx.strokeStyle = "#ffb627"; cx.shadowColor = "#ffb627"; cx.lineWidth = 6;
+  cx.beginPath(); cx.moveTo(0, -6); cx.lineTo(0, -6 - largo); cx.stroke();
+  cx.fillStyle = "#ffb627"; cx.beginPath(); cx.moveTo(-9, -6 - largo); cx.lineTo(9, -6 - largo); cx.lineTo(6, -14 - largo); cx.lineTo(-6, -14 - largo); cx.closePath(); cx.fill();
+  cx.shadowColor = "#ff2bd6"; cx.fillStyle = "#1a2440"; cx.strokeStyle = "#ff2bd6"; cx.lineWidth = 2;
+  redondo(-10, -10, 20, 20, 5); cx.fill(); cx.stroke();
+  cx.fillStyle = "rgba(0,240,255,.8)"; redondo(-6, -8, 12, 5, 2); cx.fill();
+  cx.restore();
+}
+function redondo(x, y, w, h, r) {
+  cx.beginPath(); cx.moveTo(x + r, y); cx.arcTo(x + w, y, x + w, y + h, r); cx.arcTo(x + w, y + h, x, y + h, r);
+  cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath();
 }
 
-function pintarEstado(e) {
-  $("eComando").textContent = e && e.comando ? `${e.comando} (${e.codigo})` : "Sin estado";
-  $("eConectado").textContent = e ? (e.conectado ? "Sí" : "No") : "—";
-  $("eFecha").textContent = e && e.fecha_actualizacion ? e.fecha_actualizacion.replace("T", " ") : "—";
-  document.querySelectorAll(".cmd").forEach(b => b.classList.toggle("activo", e && +b.dataset.id === e.id_comando));
+/* ================== envío de comandos (el último gana) ================== */
+let enVuelo = false, pendiente = null;
+function enviar(nombre) {
+  const c = porNombre[norm(nombre)];
+  if (!c || !c.activo || demoActiva) return;
+  pendiente = c; $("lcdTx").textContent = "COLA"; bombear();
 }
-
-const tecla = c => ((c.descripcion || "").match(/tecla\s+([A-Za-z0-9])/i) || [])[1]?.toUpperCase();
-
-function pintarComandos() {
-  $("comandos").innerHTML = "";
-  comandos.filter(c => c.activo).forEach(c => {
-    const b = document.createElement("button");
-    b.className = "cmd" + (c.nombre.toUpperCase() === "DETENER" ? " detener" : "");
-    b.dataset.id = c.id_comando;
-    const k = tecla(c);
-    b.innerHTML = `${k ? `<kbd>${k}</kbd>` : ""}<b></b><small>código ${c.codigo}</small>`;
-    b.querySelector("b").textContent = c.nombre.replaceAll("_", " ");
-    b.title = c.descripcion || "";
-    b.onclick = () => mover(c);
-    $("comandos").append(b);
-  });
-}
-
-async function mover(c) {
+async function bombear() {
+  if (enVuelo || !pendiente) return;
+  const c = pendiente; pendiente = null; enVuelo = true;
+  $("antena").classList.add("tx"); $("lcdTx").textContent = "TX ▸ " + c.nombre.replaceAll("_", " ").slice(0, 12);
+  const t0 = performance.now();
   try {
-    // el estado y el historial se refrescan al llegar el evento "movimiento" por WebSocket
     await api("/movimientos", { method: "POST", llave: true, body: { id_vehiculo: vehiculo, id_comando: c.id_comando, origen: "WEB" } });
-  } catch (e) { aviso(e.message); }
+    $("latencia").textContent = `${Math.round(performance.now() - t0)} ms`;
+    $("lcdTx").textContent = "ACK ✓";
+  } catch (e) { $("lcdTx").textContent = "ERR"; toast(e.message); term("ERROR " + e.message, "err"); }
+  finally { enVuelo = false; $("antena").classList.remove("tx"); bombear(); }
 }
 
-async function cargarHistorial() {
-  const h = await api(`/vehiculos/${vehiculo}/historial`);
-  $("historial").innerHTML = h.length ? "" : `<tr><td colspan="4" style="color:var(--tenue)">Sin movimientos</td></tr>`;
-  h.forEach(r => {
-    const tr = document.createElement("tr");
-    [r.id_historial, r.comando ?? "—", r.origen, (r.fecha_hora || "").replace("T", " ")].forEach(v => {
-      const td = document.createElement("td"); td.textContent = v; tr.append(td);
-    });
-    $("historial").append(tr);
+/* ================== joysticks ================== */
+function joystick(base) {
+  const perilla = base.querySelector(".perilla"), dirs = [...base.querySelectorAll(".dir")];
+  let activo = null, origen = null;
+  const mapa = { n: dirs.find(d => d.classList.contains("n")), s: dirs.find(d => d.classList.contains("s")),
+                 o: dirs.find(d => d.classList.contains("o")), e: dirs.find(d => d.classList.contains("e")) };
+  function mover(ev) {
+    const r = base.getBoundingClientRect(), radio = r.width / 2 - 38;
+    let dx = ev.clientX - (r.left + r.width / 2), dy = ev.clientY - (r.top + r.height / 2);
+    const m = Math.hypot(dx, dy); if (m > radio) { dx *= radio / m; dy *= radio / m; }
+    perilla.style.transform = `translate(${dx}px,${dy}px)`;
+    let dir = null;
+    if (Math.hypot(dx, dy) > radio * 0.45) dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "e" : "o") : (dy > 0 ? "s" : "n");
+    const el = dir && mapa[dir];
+    const cmd = el && !el.classList.contains("off") ? el.dataset.cmd : null;
+    if (cmd !== activo) { activo = cmd; if (cmd) enviar(cmd); }
+  }
+  base.addEventListener("pointerdown", ev => { base.setPointerCapture(ev.pointerId); base.classList.add("arrastrando"); origen = ev.pointerId; mover(ev); });
+  base.addEventListener("pointermove", ev => { if (origen === ev.pointerId) mover(ev); });
+  const soltar = ev => {
+    if (origen !== ev.pointerId) return;
+    origen = null; base.classList.remove("arrastrando"); perilla.style.transform = "";
+    if (activo && $("freno").checked) enviar("DETENER");
+    activo = null;
+  };
+  base.addEventListener("pointerup", soltar); base.addEventListener("pointercancel", soltar);
+}
+joystick($("stickIzq")); joystick($("stickDer"));
+$("btnStop").onclick = () => enviar("DETENER");
+
+/* ================== teclado ================== */
+const tecla = c => ((c.descripcion || "").match(/tecla\s+([A-Za-z0-9])/i) || [])[1]?.toUpperCase();
+const presionadas = new Set();
+addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT" || e.ctrlKey || e.altKey || e.metaKey) return;
+  const k = e.key === " " ? "DETENER" : e.key.toUpperCase();
+  const c = k === "DETENER" ? porNombre.DETENER : comandos.find(x => x.activo && tecla(x) === k);
+  if (!c) return;
+  e.preventDefault(); if (e.repeat || presionadas.has(c.nombre)) return;
+  presionadas.add(c.nombre); enviar(c.nombre);
+  if (norm(c.nombre) === "DETENER") { $("btnStop").classList.add("pulsado"); setTimeout(() => $("btnStop").classList.remove("pulsado"), 150); }
+});
+addEventListener("keyup", e => {
+  const c = comandos.find(x => tecla(x) === e.key.toUpperCase());
+  if (!c || !presionadas.delete(c.nombre)) return;
+  if ($("freno").checked && norm(c.nombre) !== "DETENER" && !presionadas.size) enviar("DETENER");
+});
+
+/* ================== pintado ================== */
+function prepararControles() {
+  porNombre = Object.fromEntries(comandos.map(c => [norm(c.nombre), c]));
+  document.querySelectorAll(".dir").forEach(d => {
+    const c = porNombre[d.dataset.cmd];
+    d.classList.toggle("off", !c || !c.activo);
+    d.innerHTML = c ? `${tecla(c) ? `<kbd>${tecla(c)}</kbd>` : ""}${d.dataset.lbl}` : "—";
+  });
+  $("btnStop").disabled = !porNombre.DETENER;
+  const mapeados = new Set([...document.querySelectorAll(".dir")].map(d => d.dataset.cmd).concat("DETENER"));
+  $("aux").innerHTML = "";
+  comandos.filter(c => c.activo && !mapeados.has(norm(c.nombre))).forEach(c => {
+    const b = document.createElement("button"); b.className = "btnHud"; b.textContent = c.nombre.replaceAll("_", " ");
+    b.title = c.descripcion || ""; b.onclick = () => enviar(c.nombre); $("aux").append(b);
   });
 }
-
+function pintarEstado(e, origen) {
+  const cmd = e && e.comando ? e.comando : "SIN ESTADO";
+  $("cmdGrande").textContent = cmd.replaceAll("_", " ");
+  $("cmdGrande").classList.toggle("alto", norm(cmd) === "DETENER");
+  $("lcdCmd").textContent = cmd.replaceAll("_", " ");
+  $("tCmd").textContent = cmd.replaceAll("_", " ");
+  $("hCodigo").textContent = e && e.codigo != null ? e.codigo : "—";
+  if (e && e.fecha_actualizacion) $("hFecha").textContent = e.fecha_actualizacion.replace("T", " ").slice(11, 19) + " UTC";
+  if (origen) $("hOrigen").textContent = origen;
+  if (e && "conectado" in e) {
+    const txt = e.conectado ? "EN LÍNEA" : "FUERA DE LÍNEA";
+    $("hConectado").textContent = txt; $("tConectado").textContent = txt;
+    $("tConectado").style.color = e.conectado ? "var(--verde)" : "var(--rojo)";
+  }
+  document.querySelectorAll(".dir").forEach(d => d.classList.toggle("activa", e && d.dataset.cmd === norm(e.comando)));
+}
+async function cargarHistorial(marcarNuevo = false) {
+  const h = await api(`/vehiculos/${vehiculo}/historial`);
+  $("lcdHist").textContent = `HIST ${h.length}/10`;
+  $("historial").innerHTML = h.length ? "" : `<li style="display:block;color:var(--tenue)">Sin movimientos todavía</li>`;
+  h.forEach((r, i) => {
+    const li = document.createElement("li"); if (marcarNuevo && i === 0) li.className = "nuevo";
+    li.innerHTML = `<span class="id">#${r.id_historial}</span><b></b><span class="org"></span><span class="hora"></span>`;
+    li.querySelector("b").textContent = (r.comando || "—").replaceAll("_", " ");
+    li.querySelector(".org").textContent = r.origen;
+    li.querySelector(".hora").textContent = (r.fecha_hora || "").replace("T", " ") + " UTC";
+    $("historial").append(li);
+  });
+}
 async function cargarDemos() {
   const demos = await api(`/vehiculos/${vehiculo}/demos`);
-  $("demos").innerHTML = demos.length ? "" : `<small style="color:var(--tenue)">Este vehículo no tiene DEMO.</small>`;
+  $("demos").innerHTML = demos.length ? "" : `<small style="color:var(--tenue)">Este vehículo no tiene DEMO registradas.</small>`;
   for (const d of demos) {
     const movs = await api(`/vehiculos/${vehiculo}/demos/${d.id_demo}/movimientos`);
     const seg = movs.reduce((s, m) => s + m.duracion_ms + m.pausa_ms, 0) / 1000;
-    const div = document.createElement("div"); div.className = "demo";
-    div.innerHTML = `<div><b></b><br><small>${movs.length} movimientos · ~${seg.toFixed(1)} s${d.activo ? "" : " · inactiva"}</small></div>`;
-    div.querySelector("b").textContent = d.nombre;
-    const b = document.createElement("button"); b.textContent = "Iniciar"; b.className = "btnDemo";
-    b.disabled = !d.activo || !movs.length;
+    const div = document.createElement("div"); div.className = "cartucho"; div.dataset.demo = d.id_demo;
+    div.innerHTML = `<div class="anillo"><span>${movs.length}</span></div><div class="info"><b></b><small>${movs.length} movimientos · ${seg.toFixed(1)} s${d.activo ? "" : " · INACTIVA"}</small></div>`;
+    div.querySelector("b").textContent = d.nombre.toUpperCase();
+    const b = document.createElement("button"); b.className = "btnHud magenta"; b.textContent = "LANZAR";
+    b.disabled = !d.activo || !movs.length || !!demoActiva;
     b.onclick = async () => {
-      try { await api(`/vehiculos/${vehiculo}/demos/${d.id_demo}/iniciar`, { method: "POST", llave: true }); }
-      catch (e) { aviso(e.message); }
+      if (demoActiva) {
+        try { await api(`/vehiculos/${vehiculo}/demos/cancelar`, { method: "POST", llave: true }); } catch (e) { toast(e.message); }
+        return;
+      }
+      try { await api(`/vehiculos/${vehiculo}/demos/${d.id_demo}/iniciar`, { method: "POST", llave: true }); } catch (e) { toast(e.message); }
     };
     div.append(b); $("demos").append(div);
   }
 }
-
-function demoEnCurso(activa, texto = "", pct = 0) {
-  $("demoVivo").style.display = activa ? "block" : "none";
-  document.querySelectorAll(".btnDemo, .cmd").forEach(b => { if (activa) b.disabled = true; });
-  if (!activa) { pintarComandos(); cargarDemos(); }
-  $("demoTexto").textContent = texto; $("demoBarra").style.width = pct + "%";
+function modoDemo(id, orden = 0, total = 0) {
+  demoActiva = id;
+  $("autopiloto").classList.toggle("on", !!id);
+  $("lcdModo").textContent = id ? `AUTO ${orden}/${total}` : "MANUAL";
+  ["stickIzq", "stickDer"].forEach(s => $(s).classList.toggle("bloq", !!id));
+  $("btnStop").disabled = !!id || !porNombre.DETENER;
+  document.querySelectorAll(".aux .btnHud").forEach(b => b.disabled = !!id);
+  document.querySelectorAll(".cartucho").forEach(c => {
+    const btn = c.querySelector("button"), esta = id && +c.dataset.demo === id;
+    btn.disabled = id ? !esta : false;
+    btn.textContent = esta ? "ABORTAR" : "LANZAR"; btn.className = "btnHud " + (esta ? "rojo" : "magenta");
+    c.querySelector(".anillo").style.setProperty("--p", esta && total ? 100 * orden / total : 0);
+    c.querySelector(".anillo span").textContent = esta && total ? `${orden}/${total}` : c.querySelector("small").textContent.split(" ")[0];
+  });
 }
 
-$("btnCancelar").onclick = async () => {
-  try { await api(`/vehiculos/${vehiculo}/demos/cancelar`, { method: "POST", llave: true }); }
-  catch (e) { aviso(e.message); }
-};
-
+/* ================== WebSocket ================== */
 function conectarWS() {
   clearTimeout(reintento);
   if (ws) { ws.onclose = null; ws.close(); }
-  const id = vehiculo;
-  ws = new WebSocket(WS_URL(id));
-  ws.onopen = () => { $("wsPunto").classList.add("on"); $("wsTexto").textContent = `WebSocket · vehículo ${id}`; };
+  const id = vehiculo; ws = new WebSocket(WS_URL(id));
+  $("wsUrl").textContent = `/ws/vehiculos/${id}`;
+  ws.onopen = () => { $("senal").classList.add("on"); $("enlace").textContent = "ENLACE OK"; };
   ws.onclose = () => {
-    $("wsPunto").classList.remove("on"); $("wsTexto").textContent = "Reconectando…";
+    $("senal").classList.remove("on"); $("enlace").textContent = "RECONECTANDO";
     if (id === vehiculo) reintento = setTimeout(conectarWS, 2000);
   };
   ws.onmessage = ev => manejar(JSON.parse(ev.data));
 }
-
 function manejar(m) {
   switch (m.tipo) {
     case "estado_inicial":
-      pintarEstado(m.estado); log("Conectado: estado inicial recibido", "t-ok");
-      if (m.demo_en_ejecucion) demoEnCurso(true, `DEMO ${m.demo_en_ejecucion} en ejecución`, 0);
+      pintarEstado(m.estado); if (m.estado) aplicarComando(m.estado.comando);
+      term("Enlace establecido · estado inicial recibido", "ok");
+      if (m.demo_en_ejecucion) modoDemo(m.demo_en_ejecucion);
       break;
     case "movimiento":
-      log(`MOVIMIENTO ${m.comando} (${m.codigo}) · origen ${m.origen}`, "t-mov");
-      pintarEstado({ id_comando: m.id_comando, comando: m.comando, codigo: m.codigo, conectado: $("eConectado").textContent === "Sí", fecha_actualizacion: m.timestamp.slice(0, 19) });
-      cargarHistorial();
+      pintarEstado({ comando: m.comando, codigo: m.codigo, fecha_actualizacion: m.timestamp }, m.origen);
+      aplicarComando(m.comando);
+      term(`MOV ▸ ${m.comando} (${m.codigo}) · ${m.origen}`, "mov");
+      cargarHistorial(true);
       break;
     case "conexion":
-      $("eConectado").textContent = m.conectado ? "Sí" : "No"; log(`Conexión del vehículo: ${m.conectado}`, "t-ok");
+      pintarEstado({ comando: $("tCmd").textContent, conectado: m.conectado }); term(`Vehículo ${m.conectado ? "en línea" : "fuera de línea"}`, "ok");
       break;
     case "demo_inicio":
-      demoTotal = m.total_movimientos; demoEnCurso(true, `DEMO ${m.id_demo} · iniciando`, 0);
-      log(`DEMO ${m.id_demo} inicia · ${m.total_movimientos} movimientos`, "t-demo");
+      modoDemo(m.id_demo, 0, m.total_movimientos); term(`DEMO ${m.id_demo} ▸ inicio · ${m.total_movimientos} movimientos`, "demo");
       break;
     case "demo_movimiento":
-      demoEnCurso(true, `DEMO ${m.id_demo} · ${m.orden}/${m.total_movimientos} · ${m.comando}`, 100 * m.orden / m.total_movimientos);
-      pintarEstado({ id_comando: m.id_comando, comando: m.comando, codigo: m.codigo, conectado: $("eConectado").textContent === "Sí", fecha_actualizacion: m.timestamp.slice(0, 19) });
-      log(`  ${m.orden}/${m.total_movimientos} ${m.comando} · ${m.duracion_ms} ms + pausa ${m.pausa_ms} ms`, "t-demo");
+      modoDemo(m.id_demo, m.orden, m.total_movimientos);
+      pintarEstado({ comando: m.comando, codigo: m.codigo, fecha_actualizacion: m.timestamp }, "DEMO");
+      aplicarComando(m.comando, m.duracion_ms);
+      term(`  ${m.orden}/${m.total_movimientos} ${m.comando} · ${m.duracion_ms} ms + ${m.pausa_ms} ms`, "demo");
       break;
     case "demo_fin":
-      log(`DEMO ${m.id_demo} terminada (no se agregó al historial)`, "t-ok"); demoEnCurso(false);
+      term(`DEMO ${m.id_demo} ▸ completada · historial intacto`, "ok"); modoDemo(null); aplicarComando("DETENER"); toast("DEMO COMPLETADA", true);
       break;
     case "demo_cancelada":
-      log(`DEMO ${m.id_demo} cancelada${m.estado_detenido ? " · estado en DETENER" : ""}`, "t-err"); demoEnCurso(false);
+      term(`DEMO ${m.id_demo} ▸ ABORTADA${m.estado_detenido ? " · estado DETENER" : ""}`, "err"); modoDemo(null); aplicarComando("DETENER");
       refrescarEstado();
       break;
-    case "demo_error":
-    case "error":
-      log(`ERROR: ${m.detalle}`, "t-err"); demoEnCurso(false); aviso(m.detalle);
+    case "demo_error": case "error":
+      term("ERROR " + m.detalle, "err"); modoDemo(null); toast(m.detalle);
       break;
-    case "pong": break;
-    default: log(JSON.stringify(m));
   }
 }
+async function refrescarEstado() { const e = await api(`/vehiculos/${vehiculo}/estado`); pintarEstado(e); if (e) aplicarComando(e.comando); }
 
-async function refrescarEstado() { pintarEstado(await api(`/vehiculos/${vehiculo}/estado`)); }
-
+/* ================== arranque ================== */
 async function elegirVehiculo(id) {
   vehiculo = +id; localStorage.setItem("iot_vehiculo", id);
-  $("log").innerHTML = "";
+  $("terminal").innerHTML = ""; sim.x = sim.y = 0; sim.rastro = [];
   try {
-    comandos = await api(`/vehiculos/${vehiculo}/comandos`);
-    pintarComandos(); demoEnCurso(false);
-    await Promise.all([cargarHistorial(), refrescarEstado()]);
-    conectarWS();
-  } catch (e) { aviso(e.message); }
+    const v = await api(`/vehiculos/${vehiculo}`);
+    $("nombreVehiculo").textContent = v.nombre.toUpperCase(); $("tVehiculo").textContent = (v.microcontrolador || "").toUpperCase();
+    comandos = v.comandos; prepararControles(); pintarEstado(v.estado); if (v.estado) aplicarComando(v.estado.comando);
+    demoActiva = null;
+    conectarWS();  // primero el enlace; las DEMO y el historial se cargan mientras tanto
+    await Promise.all([cargarHistorial(), cargarDemos()]);
+    modoDemo(demoActiva || v.demo_en_ejecucion || null);
+  } catch (e) { toast(e.message); }
 }
-
-document.addEventListener("keydown", e => {
-  if (e.target.tagName === "INPUT" || e.repeat || e.ctrlKey || e.altKey || e.metaKey) return;
-  const c = comandos.find(c => c.activo && tecla(c) === e.key.toUpperCase());
-  const boton = c && document.querySelector(`.cmd[data-id="${c.id_comando}"]`);
-  if (boton && !boton.disabled) { e.preventDefault(); boton.click(); }
-});
-
 (async () => {
+  ajustarCanvas(); requestAnimationFrame(cuadro);
   try {
     const vs = await api("/vehiculos");
-    $("vehiculo").innerHTML = "";
-    vs.forEach(v => { const o = new Option(`${v.id_vehiculo} · ${v.nombre}${v.activo ? "" : " (inactivo)"}`, v.id_vehiculo); $("vehiculo").add(o); });
-    const guardado = localStorage.getItem("iot_vehiculo");
-    if (guardado && vs.some(v => v.id_vehiculo == guardado)) $("vehiculo").value = guardado;
+    vs.forEach(v => $("vehiculo").add(new Option(`#${v.id_vehiculo} ${v.nombre.toUpperCase()}${v.activo ? "" : " (OFF)"}`, v.id_vehiculo)));
+    const g = localStorage.getItem("iot_vehiculo");
+    if (g && vs.some(v => v.id_vehiculo == g)) $("vehiculo").value = g;
     $("vehiculo").onchange = e => elegirVehiculo(e.target.value);
-    if (vs.length) elegirVehiculo($("vehiculo").value);
-    if (!$("llave").value) aviso("Escribe tu X-API-Key arriba para poder mover el vehículo", true);
-  } catch (e) { aviso("No se pudo conectar con la API: " + e.message); }
+    if (vs.length) await elegirVehiculo($("vehiculo").value);
+    if (!$("llave").value) toast("INGRESA TU X-API-KEY PARA ARMAR EL CONTROL", true);
+  } catch (e) { toast("SIN CONEXIÓN CON LA API: " + e.message); }
 })();
 </script>
 </body>

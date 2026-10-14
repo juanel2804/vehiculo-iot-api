@@ -94,7 +94,8 @@ async def main() -> None:
         r = await c.get(f"/vehiculos/{v}/estado")
         check("estado refleja AVANZAR", r.json()["comando"] == "AVANZAR")
         r = await c.post(f"/vehiculos/{v}/conexion", headers=LLAVE, json={"conectado": True})
-        check("conexion conserva comando", r.status_code == 200 and r.json()["conectado"] and r.json()["comando"] == "AVANZAR")
+        check("conexion conserva comando", r.status_code == 200 and r.json()["conectado"] and r.json()["comando"] == "AVANZAR",
+              f"{r.status_code} {r.text[:200]}")
 
         # 12 movimientos más → historial debe devolver 10
         for i in range(12):
@@ -137,7 +138,8 @@ async def main() -> None:
         check("eventos inicio + 4 movimientos + fin", tipos == ["demo_inicio"] + ["demo_movimiento"] * 4 + ["demo_fin"], tipos)
         check("movimientos con duracion_ms y pausa_ms", all("duracion_ms" in e and "pausa_ms" in e for e in eventos if e["tipo"] == "demo_movimiento"))
         despues = (await c.get(f"/vehiculos/{v}/historial")).json()
-        check("DEMO NO agrega historial", antes == despues)
+        ids_de = lambda h: [x["id_historial"] for x in h] if isinstance(h, list) else h
+        check("DEMO NO agrega historial", antes == despues, f"antes={ids_de(antes)} después={ids_de(despues)}")
         r = await c.get(f"/vehiculos/{v}/estado")
         check("DEMO actualizó estado (último = DETENER)", r.json()["comando"] == "DETENER")
 
@@ -162,10 +164,13 @@ async def main() -> None:
         check("sp_eliminar_demo", r.status_code == 200)
         r = await c.post(f"/vehiculos/{v}/comandos/{ids['APAGADO']}/eliminar", headers=LLAVE)
         check("sp_eliminar_comando", r.status_code == 200)
+        # una DEMO con movimientos debe poder borrarse junto con el vehículo
+        d2 = (await c.post(f"/vehiculos/{v}/demos", json={"nombre": "Demo que se queda"})).json()["id"]
+        await c.post(f"/vehiculos/{v}/demos/{d2}/movimientos", json={"id_comando": ids["AVANZAR"], "orden": 1, "duracion_ms": 100})
         r = await c.post(f"/vehiculos/{v}/eliminar", headers={"X-API-Key": "mala"})
         check("eliminar con llave inválida → 403", r.status_code == 403)
         r = await c.post(f"/vehiculos/{v}/eliminar", headers=LLAVE)
-        check("sp_eliminar_vehiculo (limpieza)", r.status_code == 200)
+        check("sp_eliminar_vehiculo con DEMO y movimientos", r.status_code == 200, r.json())
         r = await c.get(f"/vehiculos/{v}")
         check("vehículo temporal ya no existe", r.status_code == 404)
 
@@ -175,6 +180,18 @@ async def main() -> None:
         raise SystemExit("Fallaron: " + "; ".join(fallas))
 
 
+async def limpiar() -> None:
+    """Si la prueba se interrumpe, borra los vehículos temporales que hayan quedado."""
+    async with httpx.AsyncClient(base_url=BASE, timeout=30) as c:
+        for v in (await c.get("/vehiculos")).json():
+            if v["nombre"].startswith("Vehiculo PRUEBA"):
+                await c.post(f"/vehiculos/{v['id_vehiculo']}/eliminar", headers=LLAVE)
+                print("limpieza: vehículo temporal", v["id_vehiculo"], "eliminado")
+
+
 if __name__ == "__main__":
     sys.stdout.reconfigure(encoding="utf-8")
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    finally:
+        asyncio.run(limpiar())

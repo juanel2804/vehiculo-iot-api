@@ -48,4 +48,8 @@ class VehiculoService:
     def eliminar(self, id_vehiculo: int) -> None:
         with self._db.transaccion() as cx:
             self.exigir_existente(cx, id_vehiculo)
+            # demo_movimientos -> comandos es ON DELETE RESTRICT: si la cascada borra primero los comandos,
+            # MySQL rechaza el DELETE. Se eliminan antes las DEMO (y con ellas sus movimientos).
+            for demo in self._demos.listar_por_vehiculo(cx, id_vehiculo):
+                self._demos.eliminar(cx, demo["id_demo"])
             self._vehiculos.eliminar(cx, id_vehiculo)
