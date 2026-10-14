@@ -64,12 +64,13 @@ class EjecutorDemo:
             await asyncio.gather(*tareas, return_exceptions=True)
 
     # --- ejecución ---
-    async def _esperar(self, cancelar: asyncio.Event, ms: int) -> bool:
-        """Espera ms milisegundos; devuelve True si se canceló durante la espera."""
-        if ms <= 0:
+    async def _esperar_hasta(self, cancelar: asyncio.Event, limite: float) -> bool:
+        """Espera hasta el instante `limite` del reloj del loop; devuelve True si se canceló antes."""
+        restante = limite - asyncio.get_running_loop().time()
+        if restante <= 0:
             return cancelar.is_set()
         try:
-            await asyncio.wait_for(cancelar.wait(), timeout=ms / 1000)
+            await asyncio.wait_for(cancelar.wait(), timeout=restante)
             return True
         except asyncio.TimeoutError:
             return False
@@ -94,20 +95,27 @@ class EjecutorDemo:
     async def _correr(self, id_vehiculo: int, activa: DemoActiva, movimientos: list[dict]) -> None:
         total = len(movimientos)
         id_demo = activa.id_demo
+        reloj = asyncio.get_running_loop()
+        guardado: asyncio.Task | None = None
         try:
             await self._ws.emitir(id_vehiculo, "demo_inicio", id_demo=id_demo, total_movimientos=total)
             for mov in movimientos:
                 if activa.cancelar.is_set():
                     break
-                await asyncio.to_thread(self._fijar_estado, id_vehiculo, mov["id_comando"])
+                # Plazos medidos desde el envío: la latencia de RDS no se suma a duracion_ms ni a pausa_ms
+                inicio = reloj.time()
                 await self._ws.emitir(
                     id_vehiculo, "demo_movimiento", id_demo=id_demo, orden=mov["orden"], total_movimientos=total,
                     id_comando=mov["id_comando"], comando=mov["comando"], codigo=mov["codigo"],
                     duracion_ms=mov["duracion_ms"], pausa_ms=mov["pausa_ms"],
                 )
-                if await self._esperar(activa.cancelar, mov["duracion_ms"]):
-                    break
-                if await self._esperar(activa.cancelar, mov["pausa_ms"]):
+                # el estado se guarda en paralelo mientras transcurren la duración y la pausa del movimiento
+                guardado = asyncio.create_task(asyncio.to_thread(self._fijar_estado, id_vehiculo, mov["id_comando"]))
+                cancelada = await self._esperar_hasta(
+                    activa.cancelar, inicio + (mov["duracion_ms"] + mov["pausa_ms"]) / 1000)
+                await guardado  # respeta el orden de escrituras; si RDS falla, la excepción termina la DEMO
+                guardado = None
+                if cancelada:
                     break
             if activa.cancelar.is_set():
                 detenido = await asyncio.to_thread(self._fijar_detener, id_vehiculo)
@@ -118,6 +126,8 @@ class EjecutorDemo:
             raise
         except Exception as exc:  # falla de datos/RDS: se termina de forma controlada
             log.exception("Error en la DEMO %s del vehículo %s", id_demo, id_vehiculo)
+            if guardado is not None:  # que ninguna escritura pendiente pise el DETENER
+                await asyncio.gather(guardado, return_exceptions=True)
             try:
                 await asyncio.to_thread(self._fijar_detener, id_vehiculo)
             except Exception:
