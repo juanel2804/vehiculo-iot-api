@@ -2,7 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#05070d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>RETRO-X · Control remoto IoT</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -152,6 +156,95 @@ input.hud:focus,select.hud:focus{border-color:var(--cian);box-shadow:0 0 0 2px r
 .toast.ver{opacity:1;transform:translate(-50%,0)}
 .toast.ok{background:rgba(6,30,20,.92);border-color:var(--verde);box-shadow:0 0 25px rgba(57,255,136,.3)}
 .pie{font-family:var(--hud);font-size:9px;letter-spacing:.3em;color:#3c4d6a;text-align:center;padding:4px 0 18px}
+
+/* ================== teléfono ================== */
+.engrane,.pestanas{display:none}
+.ajustes{display:contents}
+body{overscroll-behavior:none}
+.remoto,.top,.pestanas{-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.dir .movil{display:none}
+html{overflow-x:hidden}
+.logo{white-space:nowrap}
+@media (max-width:760px), (max-height:520px) and (orientation:landscape){
+  .soloPc{display:none}
+  .chip{padding:6px 9px;font-size:9px}
+  .engrane{display:grid;place-items:center;width:38px;height:38px;border-radius:10px;font-size:20px;color:var(--cian);cursor:pointer;
+    background:var(--vidrio);border:1px solid var(--linea);transition:.25s}
+  .top{flex-wrap:wrap}
+  .top.abierto .engrane{transform:rotate(90deg);border-color:var(--cian);box-shadow:0 0 14px rgba(0,240,255,.35)}
+  .ajustes{display:none;order:9;width:100%;flex-direction:column;gap:8px;padding-top:6px}
+  .top.abierto .ajustes{display:flex}
+  .ajustes .hud{width:100%;font-size:13px;padding:11px 12px}
+  .dir kbd,.dir .pal{display:none}
+  .dir .movil{display:flex;flex-direction:column;align-items:center;gap:1px;font-size:7px;letter-spacing:.12em}
+  .dir .movil i{font-style:normal;font-size:17px;line-height:1}
+  .dir.o .movil,.dir.e .movil{max-width:44px}
+  .pestanas{display:flex;gap:6px;position:sticky;top:0;z-index:5;padding:4px;border-radius:12px;background:rgba(5,7,13,.85);
+    border:1px solid var(--linea);backdrop-filter:blur(8px)}
+  .pestanas button{flex:1;padding:10px 4px;border-radius:9px;border:0;background:transparent;color:var(--tenue);cursor:pointer;
+    font-family:var(--hud);font-size:9px;letter-spacing:.14em}
+  .pestanas button.activa{background:linear-gradient(180deg,rgba(0,240,255,.18),rgba(0,240,255,.05));color:var(--cian);
+    box-shadow:0 0 0 1px rgba(0,240,255,.4) inset,0 0 14px rgba(0,240,255,.2)}
+  .lado>.panel{display:none}.lado>.panel.activo{display:block;animation:entraPanel .25s}
+  .lista{max-height:none}.terminal{height:240px}
+  .toast{width:calc(100% - 28px);text-align:center;bottom:max(18px,env(safe-area-inset-bottom))}
+}
+@media (max-width:760px){
+  body{background-size:auto,auto,28px 28px,28px 28px}
+  .top{gap:8px;padding:10px 12px;padding-top:max(10px,env(safe-area-inset-top));flex-wrap:wrap}
+  .logo{font-size:17px}.logo small{font-size:8px;letter-spacing:.3em}
+  .escena{padding:10px;gap:12px}
+  .panel::before,.panel::after{width:12px;height:12px}
+  .titulo{padding:10px 12px 0;font-size:9px;letter-spacing:.22em}
+  .arena{height:min(42vh,340px);margin:8px}
+  .cmdGrande{font-size:13px;padding:5px 12px;top:10px;letter-spacing:.14em;max-width:70%;overflow:hidden;text-overflow:ellipsis}
+  .hudTL,.hudTR,.hudBL,.hudBR{font-size:9px;line-height:1.45}
+  .hudTL,.hudTR{top:46px}
+  .autopiloto{padding-bottom:30px}.autopiloto span{font-size:9px;letter-spacing:.25em}
+  .remoto{margin:8px 8px 10px;padding:14px 12px 18px;border-radius:22px 22px 40px 40px}
+  .remoto .antena{display:none}
+  .cuerpo{grid-template-columns:1fr 1fr;gap:10px 8px}
+  .centro{grid-column:1/-1;order:-1;flex-direction:row;justify-content:space-between;min-width:0;gap:10px;position:relative;padding-bottom:30px}
+  .lcd{width:auto;flex:1;min-width:0;font-size:10px;padding:8px 10px}
+  .lcd .grande{font-size:12px}
+  .botonStop{width:74px;height:74px;font-size:13px;flex:none}
+  .interruptores{position:absolute;left:0;right:0;bottom:0;justify-content:center}
+  .base{width:min(43vw,190px);height:min(43vw,190px)}
+  .perilla{width:58px;height:58px;margin:-29px 0 0 -29px}
+  .dir{font-size:8px}
+  .aux{margin-top:12px}
+  .lado{gap:10px}
+  .pie{padding-bottom:max(18px,env(safe-area-inset-bottom))}
+}
+@keyframes entraPanel{from{opacity:0;transform:translateY(6px)}}
+/* teléfono acostado: modo gamepad (joystick | radar | joystick) */
+@media (max-height:520px) and (orientation:landscape){
+  .top{padding:6px 14px;padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+  .logo small{display:none}
+  .logo{font-size:16px}
+  .top{gap:8px}
+  .escena{display:block;padding:6px 10px}
+  .principal{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:minmax(0,1fr) auto;
+    column-gap:14px;height:calc(100dvh - 64px);padding:8px 14px;
+    padding-left:max(14px,env(safe-area-inset-left));padding-right:max(14px,env(safe-area-inset-right))}
+  .principal>.titulo{display:none}
+  .remoto,.cuerpo{display:contents}
+  .remoto .antena,.stick .nombre{display:none}
+  #cajaIzq{grid-column:1;grid-row:1/3;align-self:center}
+  #cajaDer{grid-column:3;grid-row:1/3;align-self:center}
+  .arena{grid-column:2;grid-row:1;height:auto;min-height:0;margin:0}
+  .cmdGrande{top:auto;bottom:10px;font-size:13px;padding:5px 12px;letter-spacing:.14em}
+  .hudTL,.hudTR{font-size:9px;line-height:1.45}
+  .hudBL,.hudBR{display:none}
+  .autopiloto{align-items:center;padding-bottom:0}
+  .centro{grid-column:2;grid-row:2;flex-direction:row;justify-content:center;align-items:center;padding:8px 0 0;gap:12px;order:0}
+  .interruptores{position:static}
+  .centro .lcd{flex:0 1 230px}
+  .botonStop{width:62px;height:62px;font-size:12px}
+  .base{width:min(40vh,200px);height:min(40vh,200px)}
+  .aux{display:none}
+  .lado{margin-top:12px}
+}
 </style>
 </head>
 <body>
@@ -159,17 +252,20 @@ input.hud:focus,select.hud:focus{border-color:var(--cian);box-shadow:0 0 0 2px r
 <div class="top">
   <div class="logo">RETRO-X<small>IOT COMMAND LINK</small></div>
   <div class="esp"></div>
+  <div class="ajustes" id="ajustes">
   <input id="apiBase" class="hud" size="20" title="URL de la API (FastAPI corriendo en tu computadora)" style="display:none">
   <select id="vehiculo" class="hud" title="Vehículo"></select>
   <input id="llave" class="hud" type="password" placeholder="X-API-KEY" size="18" autocomplete="off" title="Llave de control">
+  </div>
   <div class="chip"><div id="senal" class="senal"><i></i><i></i><i></i><i></i></div><span id="enlace">SIN ENLACE</span></div>
-  <div class="chip">LAT <b id="latencia">— ms</b></div>
-  <div class="chip"><b id="reloj">--:--:--</b></div>
+  <div class="chip soloPc">LAT <b id="latencia">— ms</b></div>
+  <div class="chip soloPc"><b id="reloj">--:--:--</b></div>
+  <button class="engrane" id="btnAjustes" title="Ajustes" aria-label="Ajustes">⚙</button>
 </div>
 
 <div class="escena">
   <!-- ======= Arena + control remoto ======= -->
-  <div class="panel">
+  <div class="panel principal">
     <div class="titulo"><span>RADAR TÁCTICO · <b>SIMULACIÓN</b></span><span id="nombreVehiculo">—</span></div>
     <div class="arena">
       <canvas id="radar"></canvas>
@@ -184,7 +280,7 @@ input.hud:focus,select.hud:focus{border-color:var(--cian);box-shadow:0 0 0 2px r
     <div class="remoto">
       <div id="antena" class="antena"></div>
       <div class="cuerpo">
-        <div class="stick">
+        <div class="stick" id="cajaIzq">
           <div class="nombre">TRACCIÓN</div>
           <div class="base" id="stickIzq">
             <div class="dir n" data-cmd="AVANZAR" data-lbl="▲ AVANZAR"></div><div class="dir s" data-cmd="RETROCEDER" data-lbl="RETROCEDER ▼"></div>
@@ -205,7 +301,7 @@ input.hud:focus,select.hud:focus{border-color:var(--cian);box-shadow:0 0 0 2px r
           </div>
         </div>
 
-        <div class="stick">
+        <div class="stick" id="cajaDer">
           <div class="nombre">CABINA · PALA</div>
           <div class="base" id="stickDer">
             <div class="dir n" data-cmd="PALA_ARRIBA" data-lbl="▲ PALA"></div><div class="dir s" data-cmd="PALA_ABAJO" data-lbl="PALA ▼"></div>
@@ -218,9 +314,13 @@ input.hud:focus,select.hud:focus{border-color:var(--cian);box-shadow:0 0 0 2px r
     </div>
   </div>
 
-  <!-- ======= Panel lateral ======= -->
+  <!-- ======= Panel lateral (en teléfono: pestañas) ======= -->
   <div class="lado">
-    <div class="panel">
+    <nav class="pestanas" id="pestanas">
+      <button data-tab="demo" class="activa">DEMO</button><button data-tab="bita">BITÁCORA</button>
+      <button data-tab="tele">TELEMETRÍA</button><button data-tab="ws">ENLACE</button>
+    </nav>
+    <div class="panel" data-tab="tele">
       <div class="titulo"><span>TELEMETRÍA</span><b id="tVehiculo">—</b></div>
       <div class="telemetria">
         <div class="medidor"><small>COMANDO ACTUAL</small><b id="tCmd">—</b></div>
@@ -230,17 +330,17 @@ input.hud:focus,select.hud:focus{border-color:var(--cian);box-shadow:0 0 0 2px r
       </div>
     </div>
 
-    <div class="panel">
+    <div class="panel activo" data-tab="demo">
       <div class="titulo"><span>SECUENCIAS AUTÓNOMAS · <b>DEMO</b></span></div>
       <div class="demos" id="demos"></div>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-tab="bita">
       <div class="titulo"><span>BITÁCORA · <b>ÚLTIMOS 10</b></span><span>INDIVIDUALES</span></div>
       <ul class="lista" id="historial"></ul>
     </div>
 
-    <div class="panel">
+    <div class="panel" data-tab="ws">
       <div class="titulo"><span>ENLACE WEBSOCKET</span><b id="wsUrl">—</b></div>
       <div class="terminal" id="terminal"></div>
     </div>
@@ -391,11 +491,21 @@ function redondo(x, y, w, h, r) {
   cx.arcTo(x, y + h, x, y, r); cx.arcTo(x, y, x + w, y, r); cx.closePath();
 }
 
+/* ================== teléfono: ajustes, pestañas y vibración ================== */
+$("btnAjustes").onclick = () => document.querySelector(".top").classList.toggle("abierto");
+document.querySelectorAll("#pestanas button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#pestanas button").forEach(x => x.classList.toggle("activa", x === b));
+  document.querySelectorAll(".lado>.panel").forEach(p => p.classList.toggle("activo", p.dataset.tab === b.dataset.tab));
+});
+const vibrar = patron => { try { navigator.vibrate && navigator.vibrate(patron); } catch (e) {} };
+addEventListener("orientationchange", () => setTimeout(ajustarCanvas, 250));
+
 /* ================== envío de comandos (el último gana) ================== */
 let enVuelo = false, pendiente = null;
 function enviar(nombre) {
   const c = porNombre[norm(nombre)];
   if (!c || !c.activo || demoActiva) return;
+  vibrar(norm(c.nombre) === "DETENER" ? [35, 40, 35] : 18);
   pendiente = c; $("lcdTx").textContent = "COLA"; bombear();
 }
 async function bombear() {
@@ -465,7 +575,10 @@ function prepararControles() {
   document.querySelectorAll(".dir").forEach(d => {
     const c = porNombre[d.dataset.cmd];
     d.classList.toggle("off", !c || !c.activo);
-    d.innerHTML = c ? `${tecla(c) ? `<kbd>${tecla(c)}</kbd>` : ""}${d.dataset.lbl}` : "—";
+    // PC: tecla + etiqueta; teléfono (sin teclado): flecha grande + palabra corta
+    const flecha = (d.dataset.lbl.match(/[▲▼◀▶]/) || [""])[0], palabra = d.dataset.lbl.replace(flecha, "").trim();
+    d.innerHTML = c ? `${tecla(c) ? `<kbd>${tecla(c)}</kbd>` : ""}<span class="pal">${d.dataset.lbl}</span>`
+      + `<span class="movil"><i>${flecha}</i>${palabra}</span>` : "—";
   });
   $("btnStop").disabled = !porNombre.DETENER;
   const mapeados = new Set([...document.querySelectorAll(".dir")].map(d => d.dataset.cmd).concat("DETENER"));
@@ -616,7 +729,7 @@ async function elegirVehiculo(id) {
     if (g && vs.some(v => v.id_vehiculo == g)) $("vehiculo").value = g;
     $("vehiculo").onchange = e => elegirVehiculo(e.target.value);
     if (vs.length) await elegirVehiculo($("vehiculo").value);
-    if (!$("llave").value) toast("INGRESA TU X-API-KEY PARA ARMAR EL CONTROL", true);
+    if (!$("llave").value) { toast("INGRESA TU X-API-KEY PARA ARMAR EL CONTROL", true); document.querySelector(".top").classList.add("abierto"); }
   } catch (e) {
     toast(DESDE_API ? "SIN CONEXIÓN CON LA API: " + e.message : `NO RESPONDE LA API EN ${API_BASE} · LEVANTA UVICORN EN TU COMPU`);
     term(`Sin conexión con ${API_BASE}: ${e.message}`, "err");
