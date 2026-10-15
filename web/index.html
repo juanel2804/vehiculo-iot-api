@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#05070d">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%2305070d'/%3E%3Ctext x='32' y='44' font-size='34' font-family='Arial' font-weight='900' text-anchor='middle' fill='%2300f0ff'%3ER%3C/text%3E%3C/svg%3E">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -245,9 +246,77 @@ html{overflow-x:hidden}
   .aux{display:none}
   .lado{margin-top:12px}
 }
+
+/* ================== arranque ================== */
+.arranque{position:fixed;inset:0;z-index:100;display:grid;place-items:center;background:radial-gradient(900px 500px at 50% 40%,rgba(0,240,255,.12),#02040a 70%);
+  transition:opacity .6s,visibility .6s}
+.arranque.fuera{opacity:0;visibility:hidden}
+.arranque::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,240,255,.04) 0 1px,transparent 1px 4px);pointer-events:none}
+.arrCaja{position:relative;width:min(560px,92vw);padding:28px 28px 22px;border:1px solid var(--linea);border-radius:18px;background:rgba(6,12,24,.75);
+  box-shadow:0 0 60px rgba(0,240,255,.12),0 0 0 1px rgba(0,0,0,.6) inset}
+.arrLogo{font-family:var(--hud);font-weight:900;font-size:clamp(34px,9vw,56px);letter-spacing:.2em;text-align:center;
+  background:linear-gradient(90deg,var(--cian),var(--magenta));-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 18px rgba(0,240,255,.45));animation:glitch 3s infinite}
+@keyframes glitch{0%,92%,100%{transform:none}93%{transform:translate(2px,-1px) skewX(6deg)}95%{transform:translate(-2px,1px)}97%{transform:skewX(-4deg)}}
+.arrSub{text-align:center;font-family:var(--hud);font-size:10px;letter-spacing:.45em;color:var(--tenue);margin:4px 0 20px}
+.arrLineas{font-family:var(--mono);font-size:12px;line-height:1.9;min-height:150px}
+.arrLineas div{display:flex;justify-content:space-between;gap:12px;color:#8fa6c6;animation:entraLinea .25s}
+.arrLineas div b{font-weight:600;white-space:nowrap}
+.arrLineas .ok b{color:var(--verde);text-shadow:0 0 8px rgba(57,255,136,.6)}
+.arrLineas .mal b{color:var(--rojo);text-shadow:0 0 8px rgba(255,51,85,.6)}
+.arrLineas .esp b{color:var(--ambar)}
+@keyframes entraLinea{from{opacity:0;transform:translateX(-8px)}}
+.arrBarra{height:4px;border-radius:4px;background:#0b1424;margin:16px 0 18px;overflow:hidden}
+.arrBarra div{height:100%;width:0;background:linear-gradient(90deg,var(--cian),var(--magenta));box-shadow:0 0 12px var(--cian);transition:width .35s}
+.arrBoton{display:block;width:100%;padding:15px;border-radius:12px;cursor:pointer;font-family:var(--hud);font-weight:700;font-size:14px;letter-spacing:.3em;
+  color:#fff;background:linear-gradient(90deg,rgba(0,240,255,.25),rgba(255,43,214,.25));border:1px solid var(--cian);box-shadow:0 0 24px rgba(0,240,255,.3)}
+.arrBoton.listo{animation:latido 1.3s infinite}
+@keyframes latido{50%{box-shadow:0 0 40px rgba(0,240,255,.65),0 0 0 4px rgba(0,240,255,.15)}}
+.arrSaltar{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:12px;font-size:13px;color:var(--tenue);cursor:pointer}
+/* ================== escena 3D ================== */
+.escena3d{position:absolute;inset:0;display:none}
+.escena3d canvas{display:block;width:100%!important;height:100%!important;touch-action:none}
+.arena.modo3d{height:540px}
+.arena.modo3d .escena3d{display:block}
+.arena.modo3d #radar{position:absolute;right:12px;bottom:12px;width:150px;height:150px;border-radius:50%;
+  background:rgba(3,6,12,.72);border:1px solid rgba(0,240,255,.35);box-shadow:0 0 18px rgba(0,240,255,.2);pointer-events:none}
+.arena.modo3d .hudBR{right:auto;left:14px;bottom:52px;text-align:left}
+.arena.modo3d .hudBL{bottom:70px}
+.arena.modo3d .autopiloto{padding-bottom:70px}
+.herr3d{position:absolute;left:12px;bottom:12px;display:flex;gap:6px;z-index:2}
+.btnMini{font-family:var(--hud);font-size:9px;letter-spacing:.18em;color:var(--cian);padding:7px 10px;border-radius:8px;cursor:pointer;
+  background:rgba(3,8,16,.75);border:1px solid rgba(0,240,255,.3);backdrop-filter:blur(4px)}
+.btnMini:hover{border-color:var(--cian);box-shadow:0 0 12px rgba(0,240,255,.3)}
+.btnMini.apagado{color:var(--tenue);border-color:rgba(111,134,168,.3)}
+#btnCam{display:none}.arena.modo3d #btnCam{display:inline-block}
+@media (max-width:760px){
+  .arena.modo3d{height:min(48vh,400px)}
+  .arena.modo3d #radar{width:96px;height:96px;right:8px;bottom:8px}
+  .arena.modo3d .hudBL,.arena.modo3d .hudBR{display:none}
+  .arena.modo3d .autopiloto{padding-bottom:50px}
+  .herr3d{left:8px;bottom:8px}
+}
+@media (max-height:520px) and (orientation:landscape){
+  .arena.modo3d{height:auto}
+  .arena.modo3d #radar{width:82px;height:82px;right:6px;bottom:6px}
+  .arena.modo3d .cmdGrande{bottom:auto;top:8px}
+  .herr3d{left:6px;bottom:6px}
+}
 </style>
 </head>
 <body>
+
+<!-- ======= Secuencia de arranque ======= -->
+<div id="arranque" class="arranque">
+  <div class="arrCaja">
+    <div class="arrLogo">RETRO-X</div>
+    <div class="arrSub">IOT COMMAND LINK · PRÁCTICA 2.5</div>
+    <div class="arrLineas" id="arrLineas"></div>
+    <div class="arrBarra"><div id="arrBarra"></div></div>
+    <button id="arrBoton" class="arrBoton">SALTAR ▸</button>
+    <label class="arrSaltar"><input type="checkbox" id="arrSesion"> no mostrar otra vez en esta sesión</label>
+  </div>
+</div>
 
 <div class="top">
   <div class="logo">RETRO-X<small>IOT COMMAND LINK</small></div>
@@ -268,12 +337,17 @@ html{overflow-x:hidden}
   <div class="panel principal">
     <div class="titulo"><span>RADAR TÁCTICO · <b>SIMULACIÓN</b></span><span id="nombreVehiculo">—</span></div>
     <div class="arena">
+      <div id="escena3d" class="escena3d"></div>
       <canvas id="radar"></canvas>
       <div id="cmdGrande" class="cmdGrande">—</div>
       <div class="hudTL"><span class="etq">POS</span> <span id="hPos">0, 0</span><br><span class="etq">RUMBO</span> <span id="hRumbo">0°</span><br><span class="etq">CABINA</span> <span id="hCabina">0°</span></div>
       <div class="hudTR"><span class="etq">CÓDIGO</span> <span id="hCodigo">—</span><br><span class="etq">ESTADO RDS</span> <span id="hFecha">—</span><br><span class="etq">ORIGEN</span> <span id="hOrigen">—</span></div>
       <div class="hudBL"><span class="etq">MOTOR</span> <span id="hMotor">IDLE</span></div>
       <div class="hudBR"><span class="etq">VEHÍCULO</span> <span id="hConectado">—</span></div>
+      <div class="herr3d">
+        <button id="btnCam" class="btnMini" title="Cambiar cámara (C)">CÁM · ÓRBITA</button>
+        <button id="btnSonido" class="btnMini" title="Sonido (M)">♪ ON</button>
+      </div>
       <div id="autopiloto" class="autopiloto"><span>◆ AUTOPILOTO · DEMO EN CURSO ◆</span></div>
     </div>
 
@@ -370,6 +444,7 @@ $("llave").addEventListener("change", e => localStorage.setItem("iot_api_key", e
 setInterval(() => $("reloj").textContent = new Date().toLocaleTimeString("es-MX", { hour12: false }), 500);
 
 function toast(texto, ok = false) {
+  if (!ok) dispatchEvent(new CustomEvent("retro:error"));
   const t = $("toast"); t.textContent = texto; t.className = "toast ver" + (ok ? " ok" : "");
   clearTimeout(t._t); t._t = setTimeout(() => t.className = "toast" + (ok ? " ok" : ""), 3200);
 }
@@ -393,7 +468,10 @@ async function api(ruta, op = {}) {
 
 /* ================== simulación (radar) ================== */
 const cv = $("radar"), cx = cv.getContext("2d");
-const sim = { x: 0, y: 0, rumbo: -90, cabina: 0, pala: 0.35, cmd: "DETENER", hasta: 0, rastro: [] };
+const sim = { x: 0, y: 0, rumbo: -90, cabina: 0, pala: 0.35, cmd: "DETENER", hasta: 0, rastro: [], activo: "DETENER", v: 0 };
+window.SIM = sim;                // la escena 3D lee este mismo estado
+const MUNDO = 170;               // radio del área de trabajo simulada (unidades)
+const emitir = (tipo, detalle) => dispatchEvent(new CustomEvent("retro:" + tipo, { detail: detalle }));
 const FISICA = {   // efecto visual de cada comando en la simulación (no es telemetría real)
   AVANZAR: { v: 70 }, RETROCEDER: { v: -45 }, GIRO_IZQUIERDA: { giro: -75, v: 12 }, GIRO_DERECHA: { giro: 75, v: 12 },
   ROTACION_IZQUIERDA: { cab: -90 }, ROTACION_DERECHA: { cab: 90 }, PALA_ARRIBA: { pala: 0.55 }, PALA_ABAJO: { pala: -0.55 },
@@ -420,14 +498,15 @@ function cuadro(t) {
   sim.pala = Math.max(0, Math.min(1, sim.pala + (f.pala || 0) * dt));
   const v = f.v || 0, rad = sim.rumbo * Math.PI / 180;
   sim.x += Math.cos(rad) * v * dt; sim.y += Math.sin(rad) * v * dt;
-  const lim = Math.min(W, H) * 0.42;            // el radar es un círculo: al salir, reaparece del lado contrario
-  const d = Math.hypot(sim.x, sim.y);
-  if (d > lim) { sim.x = -sim.x * (lim - 4) / d; sim.y = -sim.y * (lim - 4) / d; sim.rastro = []; }
+  const d = Math.hypot(sim.x, sim.y);           // el área es un círculo: al salir, reaparece del lado contrario
+  if (d > MUNDO) { sim.x = -sim.x * (MUNDO - 4) / d; sim.y = -sim.y * (MUNDO - 4) / d; sim.rastro = []; emitir("salto"); }
   if (v) { sim.rastro.push([sim.x, sim.y]); if (sim.rastro.length > 260) sim.rastro.shift(); }
+  sim.activo = cmd; sim.v = v; sim.giro = f.giro || 0; sim.cabVel = f.cab || 0; sim.palaVel = f.pala || 0;
+  const lim = Math.min(W, H) * 0.42, k = lim / MUNDO;   // escala del dibujo (radar grande o minimapa)
 
   // dibujo
   cx.clearRect(0, 0, W, H);
-  const ox = W / 2, oy = H / 2 + 8, R = lim + 26;
+  const ox = W / 2, oy = H / 2 + (W > 300 ? 8 : 0), R = lim + (W > 300 ? 26 : 6);
   const g = cx.createRadialGradient(ox, oy, 0, ox, oy, R);
   g.addColorStop(0, "rgba(0,240,255,.07)"); g.addColorStop(1, "rgba(0,240,255,0)");
   cx.fillStyle = g; cx.beginPath(); cx.arc(ox, oy, R, 0, 7); cx.fill();
@@ -446,10 +525,10 @@ function cuadro(t) {
   cx.lineCap = "round";
   for (let i = 1; i < sim.rastro.length; i++) {
     const [x1, y1] = sim.rastro[i - 1], [x2, y2] = sim.rastro[i];
-    cx.strokeStyle = `rgba(255,43,214,${(i / sim.rastro.length) * 0.7})`; cx.lineWidth = 3;
-    cx.beginPath(); cx.moveTo(ox + x1, oy + y1); cx.lineTo(ox + x2, oy + y2); cx.stroke();
+    cx.strokeStyle = `rgba(255,43,214,${(i / sim.rastro.length) * 0.7})`; cx.lineWidth = Math.max(1.5, 3 * k);
+    cx.beginPath(); cx.moveTo(ox + x1 * k, oy + y1 * k); cx.lineTo(ox + x2 * k, oy + y2 * k); cx.stroke();
   }
-  dibujarRetro(ox + sim.x, oy + sim.y, cmd, t);
+  dibujarRetro(ox + sim.x * k, oy + sim.y * k, cmd, t, Math.max(k, 0.42));
 
   // HUD
   $("hPos").textContent = `${sim.x.toFixed(0)}, ${(-sim.y).toFixed(0)}`;
@@ -461,9 +540,9 @@ function cuadro(t) {
   $("tPalaBarra").style.width = `${sim.pala * 100}%`;
   requestAnimationFrame(cuadro);
 }
-function dibujarRetro(x, y, cmd, t) {
+function dibujarRetro(x, y, cmd, t, escala = 1) {
   const brillo = cmd !== "DETENER";
-  cx.save(); cx.translate(x, y); cx.rotate((sim.rumbo + 90) * Math.PI / 180);
+  cx.save(); cx.translate(x, y); cx.scale(escala, escala); cx.rotate((sim.rumbo + 90) * Math.PI / 180);
   cx.shadowColor = brillo ? "#00f0ff" : "#ff3355"; cx.shadowBlur = 18;
   // orugas
   const fase = (t / 60) % 8;
@@ -500,12 +579,49 @@ document.querySelectorAll("#pestanas button").forEach(b => b.onclick = () => {
 const vibrar = patron => { try { navigator.vibrate && navigator.vibrate(patron); } catch (e) {} };
 addEventListener("orientationchange", () => setTimeout(ajustarCanvas, 250));
 
+
+/* ================== secuencia de arranque (chequeos reales) ================== */
+const esperar = ms => new Promise(r => setTimeout(r, ms));
+async function hasta(condicion, ms) {
+  const fin = performance.now() + ms;
+  while (performance.now() < fin) { if (condicion()) return true; await esperar(120); }
+  return condicion();
+}
+async function secuenciaArranque() {
+  const caja = $("arranque"), lineas = $("arrLineas"), barra = $("arrBarra"), boton = $("arrBoton");
+  const cerrar = () => {
+    if ($("arrSesion").checked) sessionStorage.setItem("retro_boot", "1");
+    caja.classList.add("fuera"); emitir("arrancar");
+  };
+  boton.onclick = cerrar;
+  if (sessionStorage.getItem("retro_boot")) { caja.classList.add("fuera"); return; }
+  const pasos = 6; let hechos = 0;
+  async function paso(texto, prueba, ok = "OK", mal = "FALLA") {
+    const d = document.createElement("div"); d.innerHTML = `<span></span><b>···</b>`;
+    d.querySelector("span").textContent = texto; lineas.append(d);
+    let r; try { r = await prueba(); } catch (e) { r = false; }
+    const etiqueta = typeof r === "string" ? r : r ? ok : mal;
+    d.className = r === "esp" ? "esp" : r ? "ok" : "mal"; d.querySelector("b").textContent = r === "esp" ? ok : etiqueta;
+    barra.style.width = `${(++hechos / pasos) * 100}%`;
+    return r;
+  }
+  await paso("NÚCLEO RETRO-X", async () => { await esperar(350); return true; }, "EN LÍNEA");
+  await paso(`API ▸ ${API_BASE.replace(/^https?:\/\//, "")}`, async () => (await fetch(API_BASE + "/salud")).ok, "OK", "SIN RESPUESTA");
+  await paso("AMAZON RDS ▸ vehiculo_iot", async () => (await hasta(() => $("vehiculo").options.length > 0, 9000))
+    ? `${$("vehiculo").options.length} VEHÍCULO(S)` : false, "OK", "SIN DATOS");
+  await paso("CANAL WEBSOCKET", () => hasta(() => $("enlace").textContent === "ENLACE OK", 9000), "ENLAZADO", "SIN ENLACE");
+  await paso("MOTOR GRÁFICO 3D", async () => (await hasta(() => window.RETRO3D !== undefined, 8000)) && window.RETRO3D
+    ? "WEBGL OK" : "esp", "MODO 2D");
+  await paso("SÍNTESIS DE AUDIO", async () => (window.AudioContext || window.webkitAudioContext) ? "esp" : false, "LISTA", "NO DISPONIBLE");
+  boton.textContent = "▶ ARRANCAR MOTOR"; boton.classList.add("listo");
+}
+
 /* ================== envío de comandos (el último gana) ================== */
 let enVuelo = false, pendiente = null;
 function enviar(nombre) {
   const c = porNombre[norm(nombre)];
   if (!c || !c.activo || demoActiva) return;
-  vibrar(norm(c.nombre) === "DETENER" ? [35, 40, 35] : 18);
+  vibrar(norm(c.nombre) === "DETENER" ? [35, 40, 35] : 18); emitir("tx", norm(c.nombre));
   pendiente = c; $("lcdTx").textContent = "COLA"; bombear();
 }
 async function bombear() {
@@ -684,7 +800,7 @@ function manejar(m) {
       pintarEstado({ comando: $("tCmd").textContent, conectado: m.conectado }); term(`Vehículo ${m.conectado ? "en línea" : "fuera de línea"}`, "ok");
       break;
     case "demo_inicio":
-      modoDemo(m.id_demo, 0, m.total_movimientos); term(`DEMO ${m.id_demo} ▸ inicio · ${m.total_movimientos} movimientos`, "demo");
+      emitir("demo"); modoDemo(m.id_demo, 0, m.total_movimientos); term(`DEMO ${m.id_demo} ▸ inicio · ${m.total_movimientos} movimientos`, "demo");
       break;
     case "demo_movimiento":
       modoDemo(m.id_demo, m.orden, m.total_movimientos);
@@ -693,10 +809,10 @@ function manejar(m) {
       term(`  ${m.orden}/${m.total_movimientos} ${m.comando} · ${m.duracion_ms} ms + ${m.pausa_ms} ms`, "demo");
       break;
     case "demo_fin":
-      term(`DEMO ${m.id_demo} ▸ completada · historial intacto`, "ok"); modoDemo(null); aplicarComando("DETENER"); toast("DEMO COMPLETADA", true);
+      emitir("demofin"); term(`DEMO ${m.id_demo} ▸ completada · historial intacto`, "ok"); modoDemo(null); aplicarComando("DETENER"); toast("DEMO COMPLETADA", true);
       break;
     case "demo_cancelada":
-      term(`DEMO ${m.id_demo} ▸ ABORTADA${m.estado_detenido ? " · estado DETENER" : ""}`, "err"); modoDemo(null); aplicarComando("DETENER");
+      emitir("error"); term(`DEMO ${m.id_demo} ▸ ABORTADA${m.estado_detenido ? " · estado DETENER" : ""}`, "err"); modoDemo(null); aplicarComando("DETENER");
       refrescarEstado();
       break;
     case "demo_error": case "error":
@@ -721,7 +837,7 @@ async function elegirVehiculo(id) {
   } catch (e) { toast(e.message); }
 }
 (async () => {
-  ajustarCanvas(); requestAnimationFrame(cuadro);
+  ajustarCanvas(); requestAnimationFrame(cuadro); secuenciaArranque();
   try {
     const vs = await api("/vehiculos");
     vs.forEach(v => $("vehiculo").add(new Option(`#${v.id_vehiculo} ${v.nombre.toUpperCase()}${v.activo ? "" : " (OFF)"}`, v.id_vehiculo)));
@@ -735,6 +851,526 @@ async function elegirVehiculo(id) {
     term(`Sin conexión con ${API_BASE}: ${e.message}`, "err");
   }
 })();
+</script>
+<script>
+/* ================== sonido sintetizado (WebAudio, sin archivos) ================== */
+(() => {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  let ctx = null, maestro, motorFiltro, motorGain, m1, m2, retumbeGain, hidGain, hidTono, beepGain, ruido;
+  let silencio = localStorage.getItem("retro_mute") === "1", ultimoBeep = 0, cmdPrevio = null, listoDesde = 0;
+
+  function bufferRuido() {
+    const b = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate), d = b.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return b;
+  }
+  function fuenteRuido() { const n = ctx.createBufferSource(); n.buffer = ruido; n.loop = true; n.start(); return n; }
+
+  function iniciar() {
+    if (!Ctx) return;
+    if (ctx) { ctx.resume(); return; }
+    ctx = new Ctx(); ruido = bufferRuido();
+    maestro = ctx.createGain(); maestro.gain.value = silencio ? 0 : 0.6;
+    const comp = ctx.createDynamicsCompressor(); maestro.connect(comp).connect(ctx.destination);
+
+    // motor diésel: diente de sierra + sub, con "golpeteo" (LFO) y filtro que abre con las RPM
+    motorFiltro = ctx.createBiquadFilter(); motorFiltro.type = "lowpass"; motorFiltro.frequency.value = 260; motorFiltro.Q.value = 4;
+    motorGain = ctx.createGain(); motorGain.gain.value = 0;
+    m1 = ctx.createOscillator(); m1.type = "sawtooth"; m1.frequency.value = 34;
+    m2 = ctx.createOscillator(); m2.type = "square"; m2.frequency.value = 17;
+    const m2g = ctx.createGain(); m2g.gain.value = 0.45;
+    const lfo = ctx.createOscillator(), lfoG = ctx.createGain(); lfo.frequency.value = 11; lfoG.gain.value = 5;
+    lfo.connect(lfoG); lfoG.connect(m1.frequency); lfoG.connect(m2.frequency);
+    m1.connect(motorFiltro); m2.connect(m2g).connect(motorFiltro); motorFiltro.connect(motorGain).connect(maestro);
+    [m1, m2, lfo].forEach(o => o.start());
+    // retumbe grave (orugas)
+    const rf = ctx.createBiquadFilter(); rf.type = "lowpass"; rf.frequency.value = 140;
+    retumbeGain = ctx.createGain(); retumbeGain.gain.value = 0;
+    fuenteRuido().connect(rf).connect(retumbeGain).connect(maestro);
+    // hidráulico: siseo de banda + chillido de bomba
+    const hf = ctx.createBiquadFilter(); hf.type = "bandpass"; hf.frequency.value = 1100; hf.Q.value = 1.2;
+    hidGain = ctx.createGain(); hidGain.gain.value = 0;
+    fuenteRuido().connect(hf).connect(hidGain).connect(maestro);
+    hidTono = ctx.createOscillator(); hidTono.type = "triangle"; hidTono.frequency.value = 210;
+    const ht = ctx.createGain(); ht.gain.value = 0.35; hidTono.connect(ht).connect(hidGain); hidTono.start();
+    // alarma de reversa
+    const bo = ctx.createOscillator(); bo.type = "square"; bo.frequency.value = 1180;
+    beepGain = ctx.createGain(); beepGain.gain.value = 0; bo.connect(beepGain).connect(maestro); bo.start();
+    listoDesde = ctx.currentTime + 1.2;
+  }
+
+  const objetivo = (param, valor, tiempo = 0.12) => param.setTargetAtTime(valor, ctx.currentTime, tiempo);
+
+  function golpe({ f0 = 90, f1 = 35, dur = 0.35, vol = 0.9, tipo = "sine" } = {}) {
+    const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = tipo; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g).connect(maestro); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function soplido(dur = 0.6, vol = 0.35, frec = 2600) {   // freno de aire
+    const t = ctx.currentTime, n = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+    n.buffer = ruido; f.type = "highpass"; f.frequency.value = frec;
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    n.connect(f).connect(g).connect(maestro); n.start(t); n.stop(t + dur);
+  }
+  function blip(f = 1500, dur = 0.06, vol = 0.18) {
+    const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "sine"; o.frequency.setValueAtTime(f, t); o.frequency.exponentialRampToValueAtTime(f * 1.6, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g).connect(maestro); o.start(t); o.stop(t + dur + 0.02);
+  }
+  function barrido(f0, f1, dur, vol = 0.22, tipo = "sawtooth") {
+    const t = ctx.currentTime, o = ctx.createOscillator(), g = ctx.createGain(), fl = ctx.createBiquadFilter();
+    fl.type = "lowpass"; fl.frequency.value = 2400;
+    o.type = tipo; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(0.001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.05); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(fl).connect(g).connect(maestro); o.start(t); o.stop(t + dur + 0.05);
+  }
+  function arranqueMotor() {        // marcha + encendido
+    const t = ctx.currentTime;
+    for (let i = 0; i < 5; i++) setTimeout(() => golpe({ f0: 70, f1: 40, dur: 0.12, vol: 0.5, tipo: "square" }), i * 130);
+    setTimeout(() => { golpe({ f0: 120, f1: 30, dur: 0.6, vol: 0.9 }); soplido(0.4, 0.12, 900); }, 700);
+    listoDesde = t + 1.1;
+  }
+
+  // Cada cuadro: ajusta el motor según lo que hace la simulación
+  function cuadro() {
+    requestAnimationFrame(cuadro);
+    if (!ctx || ctx.state !== "running") return;
+    const s = window.SIM; if (!s) return;
+    const enLinea = document.getElementById("enlace")?.textContent === "ENLACE OK";
+    const traccion = Math.abs(s.v) > 15, giro = !!s.giro, hidraulico = !!(s.cabVel || s.palaVel);
+    const rpm = ctx.currentTime < listoDesde ? 0 : traccion ? 1 : giro ? 0.75 : hidraulico ? 0.55 : enLinea ? 0.22 : 0.12;
+    objetivo(m1.frequency, 30 + rpm * 46, 0.25); objetivo(m2.frequency, 15 + rpm * 23, 0.25);
+    objetivo(motorFiltro.frequency, 220 + rpm * 1300, 0.25);
+    objetivo(motorGain.gain, rpm ? 0.08 + rpm * 0.14 : 0, 0.3);
+    objetivo(retumbeGain.gain, traccion || giro ? 0.5 : 0, 0.2);
+    objetivo(hidGain.gain, hidraulico ? 0.1 : 0, 0.08);
+    objetivo(hidTono.frequency, s.palaVel > 0 ? 340 : s.palaVel < 0 ? 170 : 240, 0.4);
+    // bip-bip de reversa
+    const reversa = s.v < 0, t = ctx.currentTime;
+    if (reversa && t - ultimoBeep > 0.9) {
+      ultimoBeep = t;
+      beepGain.gain.setValueAtTime(0.11, t); beepGain.gain.setValueAtTime(0, t + 0.42);
+    }
+    // cambio de comando confirmado: golpe al detener, blip al resto
+    if (s.cmd !== cmdPrevio) {
+      if (cmdPrevio !== null && t > listoDesde) {
+        if (s.cmd === "DETENER") { golpe(); soplido(); } else blip(900, 0.05, 0.12);
+      }
+      cmdPrevio = s.cmd;
+    }
+  }
+  requestAnimationFrame(cuadro);
+
+  function ponerSilencio(valor) {
+    silencio = valor; localStorage.setItem("retro_mute", valor ? "1" : "0");
+    const b = document.getElementById("btnSonido");
+    if (b) { b.textContent = valor ? "♪ OFF" : "♪ ON"; b.classList.toggle("apagado", valor); }
+    if (ctx) objetivo(maestro.gain, valor ? 0 : 0.6, 0.05);
+  }
+  ponerSilencio(silencio);
+  document.getElementById("btnSonido").onclick = () => { iniciar(); ponerSilencio(!silencio); };
+  addEventListener("keydown", e => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+    if (e.key.toLowerCase() === "m") ponerSilencio(!silencio);
+  });
+
+  // Los navegadores exigen un gesto del usuario para sonar: el botón ARRANCAR o el primer toque
+  addEventListener("retro:arrancar", () => { iniciar(); if (ctx) arranqueMotor(); });
+  addEventListener("pointerdown", () => iniciar(), { once: true });
+  addEventListener("keydown", () => iniciar(), { once: true });
+  addEventListener("retro:tx", () => ctx && blip(1700, 0.05, 0.1));
+  addEventListener("retro:demo", () => ctx && barrido(180, 1400, 0.6));
+  addEventListener("retro:demofin", () => ctx && (blip(1200, 0.09, 0.2), setTimeout(() => blip(1800, 0.12, 0.2), 120)));
+  addEventListener("retro:error", () => ctx && (golpe({ f0: 160, f1: 120, dur: 0.18, vol: 0.35, tipo: "square" }),
+    setTimeout(() => golpe({ f0: 160, f1: 110, dur: 0.22, vol: 0.35, tipo: "square" }), 210)));
+  addEventListener("retro:salto", () => ctx && barrido(1600, 300, 0.35, 0.15, "sine"));
+  document.addEventListener("visibilitychange", () => { if (ctx) document.hidden ? ctx.suspend() : ctx.resume(); });
+})();
+
+</script>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+            "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}
+</script>
+<script type="module">
+/* ================== escena 3D (Three.js): lee window.SIM, la misma simulación del radar ================== */
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+
+try {
+  const arena = document.querySelector(".arena"), cont = document.getElementById("escena3d");
+  const MOVIL = matchMedia("(max-width:760px), (max-height:520px)").matches;
+  const MUNDO = 170;
+  const C = { cian: 0x00f0ff, magenta: 0xff2bd6, ambar: 0xffb627, rojo: 0xff3355, verde: 0x39ff88 };
+
+  // ---------- render ----------
+  const renderer = new THREE.WebGLRenderer({ antialias: !MOVIL, powerPreference: "high-performance" });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, MOVIL ? 1.5 : 2));
+  renderer.shadowMap.enabled = !MOVIL; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.35;
+  cont.appendChild(renderer.domElement);
+  arena.classList.add("modo3d");
+
+  const escena = new THREE.Scene();
+  escena.background = new THREE.Color(0x02050b);
+  escena.fog = new THREE.FogExp2(0x02050b, 0.0034);
+  const camara = new THREE.PerspectiveCamera(48, 1, 0.5, 2500);
+  camara.position.set(-85, 62, 95);
+
+  const controles = new OrbitControls(camara, renderer.domElement);
+  controles.enableDamping = true; controles.enablePan = false;
+  controles.minDistance = 45; controles.maxDistance = 420; controles.maxPolarAngle = 1.42;
+
+  let composer = null;
+  if (!MOVIL) {
+    composer = new EffectComposer(renderer);
+    composer.addPass(new RenderPass(escena, camara));
+    composer.addPass(new UnrealBloomPass(new THREE.Vector2(512, 512), 0.6, 0.5, 0.24));
+    composer.addPass(new OutputPass());
+  }
+
+  // ---------- luces ----------
+  escena.add(new THREE.HemisphereLight(0x8fc8ff, 0x140a1e, 1.1));
+  const sol = new THREE.DirectionalLight(0xbfe8ff, 1.5);
+  sol.position.set(-90, 160, 70); sol.castShadow = true;
+  sol.shadow.mapSize.set(2048, 2048);
+  Object.assign(sol.shadow.camera, { left: -90, right: 90, top: 90, bottom: -90, near: 10, far: 420 });
+  escena.add(sol, sol.target);
+  const brilloSuelo = new THREE.PointLight(C.cian, 900, 70, 2); brilloSuelo.position.y = 6; escena.add(brilloSuelo);
+
+  // ---------- materiales ----------
+  const mat = {
+    chasis: new THREE.MeshStandardMaterial({ color: 0x34425e, metalness: 0.6, roughness: 0.4, emissive: 0x0a1424, emissiveIntensity: 0.6 }),
+    oscuro: new THREE.MeshStandardMaterial({ color: 0x0b0f17, metalness: 0.6, roughness: 0.6 }),
+    amarillo: new THREE.MeshStandardMaterial({ color: 0xffae1a, metalness: 0.45, roughness: 0.32, emissive: 0x3a2200, emissiveIntensity: 0.6 }),
+    acero: new THREE.MeshStandardMaterial({ color: 0xc8d4e6, metalness: 1, roughness: 0.18 }),
+    vidrio: new THREE.MeshStandardMaterial({ color: 0x0a2a33, emissive: C.cian, emissiveIntensity: 0.9, transparent: true, opacity: 0.85, metalness: 0.3, roughness: 0.05 }),
+    magenta: new THREE.MeshBasicMaterial({ color: C.magenta }),
+    cianB: new THREE.MeshBasicMaterial({ color: C.cian }),
+    faro: new THREE.MeshBasicMaterial({ color: 0xe8fbff }),
+  };
+  const bordes = (malla, color = C.cian, opacidad = 0.55) => {
+    const l = new THREE.LineSegments(new THREE.EdgesGeometry(malla.geometry, 25),
+      new THREE.LineBasicMaterial({ color, transparent: true, opacity: opacidad }));
+    malla.add(l); return malla;
+  };
+  const caja = (w, h, d, m, x = 0, y = 0, z = 0, borde) => {
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+    b.position.set(x, y, z); b.castShadow = b.receiveShadow = true;
+    if (borde) bordes(b, borde);
+    return b;
+  };
+
+  // ---------- terreno ----------
+  const suelo = new THREE.Mesh(new THREE.CircleGeometry(1100, 64), new THREE.MeshStandardMaterial({ color: 0x050a12, roughness: 0.92, metalness: 0.15 }));
+  suelo.rotation.x = -Math.PI / 2; suelo.receiveShadow = true; escena.add(suelo);
+  const grid = new THREE.GridHelper(700, 70, C.cian, 0x0b3442);
+  grid.material.transparent = true; grid.material.opacity = 0.28; grid.position.y = 0.05; escena.add(grid);
+  const anillo = (r1, r2, color, op) => {
+    const m = new THREE.Mesh(new THREE.RingGeometry(r1, r2, 160), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op, side: THREE.DoubleSide }));
+    m.rotation.x = -Math.PI / 2; m.position.y = 0.12; escena.add(m); return m;
+  };
+  anillo(MUNDO - 1.5, MUNDO + 1.5, C.cian, 0.9);
+  anillo(MUNDO + 4, MUNDO + 10, C.cian, 0.08);
+  [60, 115].forEach(r => anillo(r - 0.4, r + 0.4, C.cian, 0.18));
+  // postes del perímetro
+  for (let a = 0; a < 360; a += 22.5) {
+    const r = a * Math.PI / 180, g = new THREE.Group();
+    g.position.set(Math.cos(r) * (MUNDO + 7), 0, Math.sin(r) * (MUNDO + 7));
+    const p = caja(2.2, 14, 2.2, mat.oscuro, 0, 7, 0, C.cian);
+    const punta = new THREE.Mesh(new THREE.SphereGeometry(1.5, 12, 8), a % 45 ? mat.cianB : mat.magenta);
+    punta.position.y = 15; g.add(p, punta); escena.add(g);
+  }
+  // rocas fuera del área de trabajo
+  const rocaGeo = new THREE.IcosahedronGeometry(1, 0);
+  for (let i = 0; i < 46; i++) {
+    const r = MUNDO + 30 + Math.random() * 240, a = Math.random() * Math.PI * 2, t = 4 + Math.random() * 12;
+    const m = new THREE.Mesh(rocaGeo, mat.oscuro);
+    m.scale.set(t * (0.8 + Math.random() * 0.6), t * (0.5 + Math.random() * 0.6), t);
+    m.position.set(Math.cos(a) * r, t * 0.3, Math.sin(a) * r); m.rotation.set(Math.random(), Math.random() * 6, Math.random());
+    m.castShadow = m.receiveShadow = true; bordes(m, Math.random() < 0.2 ? C.magenta : C.cian, 0.25); escena.add(m);
+  }
+  // horizonte: torres con ventanas
+  for (let i = 0; i < 60; i++) {
+    const a = Math.random() * Math.PI * 2, r = 520 + Math.random() * 380, h = 40 + Math.random() * 190, w = 18 + Math.random() * 30;
+    const t = caja(w, h, w, mat.oscuro, Math.cos(a) * r, h / 2, Math.sin(a) * r);
+    bordes(t, Math.random() < 0.3 ? C.magenta : C.cian, 0.35); escena.add(t);
+  }
+  // estrellas
+  {
+    const n = 900, pos = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, e = Math.random() * 0.45 + 0.08, r = 1400;
+      pos.set([Math.cos(a) * Math.cos(e) * r, Math.sin(e) * r, Math.sin(a) * Math.cos(e) * r], i * 3);
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    escena.add(new THREE.Points(g, new THREE.PointsMaterial({ color: 0x9fdcff, size: 2.2, sizeAttenuation: false, fog: false })));
+  }
+
+  // ---------- retroexcavadora (adelante = +X) ----------
+  const retro = new THREE.Group(); escena.add(retro);
+  // orugas con zapatas que se mueven sobre un óvalo
+  const ORUGA = { largo: 36, radio: 4, z: 11.5 };
+  const perimetro = 2 * ORUGA.largo + 2 * Math.PI * ORUGA.radio, ZAPATAS = 30;
+  const zapataGeo = new THREE.BoxGeometry(2.1, 0.9, 7.6);
+  const zapatas = [];
+  function puntoOruga(u) {   // u en [0, perímetro): recorre arriba → curva delantera → abajo → curva trasera
+    const L = ORUGA.largo, R = ORUGA.radio, cy = R + 0.5;
+    u = ((u % perimetro) + perimetro) % perimetro;
+    if (u < L) return [L / 2 - u, cy + R, Math.PI];
+    u -= L; if (u < Math.PI * R) { const a = Math.PI / 2 + u / R; return [-L / 2 + Math.cos(a) * R, cy + Math.sin(a) * R, a + Math.PI / 2]; }
+    u -= Math.PI * R; if (u < L) return [-L / 2 + u, cy - R, 0];
+    u -= L; const a = -Math.PI / 2 + u / R; return [L / 2 + Math.cos(a) * R, cy + Math.sin(a) * R, a + Math.PI / 2];
+  }
+  for (const lado of [-1, 1]) {
+    const g = new THREE.Group(); g.position.z = lado * ORUGA.z; retro.add(g);
+    g.add(caja(ORUGA.largo, 5, 6, mat.chasis, 0, ORUGA.radio + 0.5, 0, C.cian));
+    for (const x of [-ORUGA.largo / 2, ORUGA.largo / 2]) {
+      const rueda = new THREE.Mesh(new THREE.CylinderGeometry(ORUGA.radio - 0.6, ORUGA.radio - 0.6, 6.6, 20), mat.acero);
+      rueda.rotation.x = Math.PI / 2; rueda.position.set(x, ORUGA.radio + 0.5, 0); g.add(rueda);
+    }
+    const inst = new THREE.InstancedMesh(zapataGeo, mat.oscuro, ZAPATAS); inst.castShadow = true; g.add(inst);
+    const neon = new THREE.Mesh(new THREE.BoxGeometry(ORUGA.largo - 4, 0.5, 0.4), lado > 0 ? mat.magenta : mat.cianB);
+    neon.position.set(0, ORUGA.radio + 0.5, lado * 3.25); g.add(neon);
+    zapatas.push({ inst, fase: 0, lado });
+  }
+  const dummy = new THREE.Object3D();
+  function moverZapatas(o) {
+    for (let i = 0; i < ZAPATAS; i++) {
+      const [x, y, ang] = puntoOruga(o.fase + i * perimetro / ZAPATAS);
+      dummy.position.set(x, y, 0); dummy.rotation.set(0, 0, ang); dummy.updateMatrix(); o.inst.setMatrixAt(i, dummy.matrix);
+    }
+    o.inst.instanceMatrix.needsUpdate = true;
+  }
+  retro.add(caja(24, 4, 17, mat.oscuro, 0, 8, 0));
+
+  // torre giratoria
+  const torre = new THREE.Group(); torre.position.y = 10.5; retro.add(torre);
+  const plato = new THREE.Mesh(new THREE.CylinderGeometry(9.5, 10, 1.6, 32), mat.acero); plato.castShadow = true; torre.add(plato);
+  torre.add(caja(24, 8, 19, mat.chasis, -2, 5, 0, C.cian));                          // casa del motor
+  const contrapeso = new THREE.Mesh(new THREE.CylinderGeometry(9.5, 9.5, 8, 24, 1, false, Math.PI / 2, Math.PI), mat.amarillo);
+  contrapeso.position.set(-14, 5, 0); contrapeso.castShadow = true; bordes(contrapeso, C.ambar, 0.4); torre.add(contrapeso);
+  torre.add(caja(1, 1.2, 19.2, mat.magenta, 10.1, 3.2, 0));                          // franja neón frontal
+  const cabina = caja(10, 11, 8.5, mat.chasis, 5, 14.5, -5, C.magenta); torre.add(cabina);
+  torre.add(caja(0.4, 7, 7.2, mat.vidrio, 10.1, 15, -5), caja(8.4, 6.5, 0.4, mat.vidrio, 5, 15.3, -9.35));
+  torre.add(caja(3.2, 1, 3.2, mat.oscuro, 5, 20.6, -5));
+  const escape = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 7, 10), mat.acero); escape.position.set(-9, 12, 5); torre.add(escape);
+  // torreta de advertencia
+  const torreta = new THREE.Group(); torreta.position.set(5, 21.6, -5); torre.add(torreta);
+  torreta.add(new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.3, 1.8, 12), new THREE.MeshBasicMaterial({ color: C.ambar, transparent: true, opacity: 0.9 })));
+  const haz = new THREE.Mesh(new THREE.ConeGeometry(5, 22, 16, 1, true), new THREE.MeshBasicMaterial({ color: C.ambar, transparent: true, opacity: 0.12, side: THREE.DoubleSide, depthWrite: false }));
+  haz.rotation.z = -Math.PI / 2; haz.position.x = 11; torreta.add(haz);
+  const luzTorreta = new THREE.PointLight(C.ambar, 0, 60, 2); torreta.add(luzTorreta);
+  // faros
+  const faros = new THREE.SpotLight(0xdff6ff, 0, 140, 0.5, 0.55, 1.4);
+  faros.position.set(10.5, 9, 0); faros.target.position.set(60, 0, 0); torre.add(faros, faros.target);
+  [-6, 6].forEach(z => torre.add(caja(0.5, 1.4, 2.4, mat.faro, 10.4, 8.6, z)));
+
+  // brazo: pluma → balancín → cucharón (articulados por la pala de la simulación)
+  const pluma = new THREE.Group(); pluma.position.set(9, 6.5, 4.5); torre.add(pluma);
+  pluma.add(caja(30, 3.6, 3.2, mat.amarillo, 15, 0, 0, C.ambar));
+  const balancin = new THREE.Group(); balancin.position.set(30, 0, 0); pluma.add(balancin);
+  balancin.add(caja(22, 2.8, 2.6, mat.amarillo, 11, 0, 0, C.ambar));
+  const cucharon = new THREE.Group(); cucharon.position.set(22, 0, 0); balancin.add(cucharon);
+  {
+    const f = new THREE.Shape();
+    f.moveTo(0, 0); f.lineTo(7.5, -1.2); f.quadraticCurveTo(9.5, -5, 6, -8.5); f.lineTo(4.2, -8.2); f.quadraticCurveTo(5.5, -4, 1.5, -2.6); f.lineTo(0, 0);
+    const g = new THREE.ExtrudeGeometry(f, { depth: 7, bevelEnabled: true, bevelSize: 0.3, bevelThickness: 0.3, bevelSegments: 1 });
+    g.translate(0, 0, -3.5);
+    const m = new THREE.Mesh(g, mat.oscuro); m.castShadow = true; bordes(m, C.magenta, 0.7); cucharon.add(m);
+    for (let i = -2; i <= 2; i++) { const d = caja(0.8, 1.4, 0.8, mat.acero, 6.2, -8.6, i * 1.5); d.rotation.z = 0.3; cucharon.add(d); }
+  }
+  // pistón hidráulico de la pluma (cromado, se estira con el brazo)
+  const piston = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, 1, 12), mat.acero); piston.castShadow = true; torre.add(piston);
+  const pA = new THREE.Vector3(), pB = new THREE.Vector3(), eje = new THREE.Vector3(0, 1, 0);
+  function actualizarPiston() {
+    pA.set(9.5, 1.5, 4.5);
+    pB.set(14, -1.6, 0); pluma.localToWorld(pB); torre.worldToLocal(pB);
+    const dir = pB.clone().sub(pA), largo = dir.length();
+    piston.position.copy(pA).addScaledVector(dir, 0.5); piston.scale.set(1, largo, 1);
+    piston.quaternion.setFromUnitVectors(eje, dir.normalize());
+  }
+
+  // ---------- efectos ----------
+  // polvo (partículas con tamaño y opacidad propios)
+  const NP = MOVIL ? 160 : 420;
+  const pPos = new Float32Array(NP * 3), pVel = new Float32Array(NP * 3), pVida = new Float32Array(NP), pTam = new Float32Array(NP);
+  const polvoGeo = new THREE.BufferGeometry();
+  polvoGeo.setAttribute("position", new THREE.BufferAttribute(pPos, 3));
+  polvoGeo.setAttribute("vida", new THREE.BufferAttribute(pVida, 1));
+  polvoGeo.setAttribute("tam", new THREE.BufferAttribute(pTam, 1));
+  const polvo = new THREE.Points(polvoGeo, new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    uniforms: { color: { value: new THREE.Color(0x7fd9ff) } },
+    vertexShader: `attribute float vida; attribute float tam; varying float vV;
+      void main(){ vV = vida; vec4 mv = modelViewMatrix * vec4(position,1.0); gl_PointSize = tam * (300.0 / -mv.z); gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `uniform vec3 color; varying float vV;
+      void main(){ float d = length(gl_PointCoord - 0.5); if (d > 0.5) discard; gl_FragColor = vec4(color, (0.5 - d) * vV * 0.55); }`,
+  }));
+  polvo.frustumCulled = false; escena.add(polvo);
+  let siguiente = 0;
+  function emitirPolvo(x, y, z, vx, vz, n = 1, tam = 3) {
+    for (let k = 0; k < n; k++) {
+      const i = siguiente; siguiente = (siguiente + 1) % NP;
+      pPos.set([x + (Math.random() - 0.5) * 4, y, z + (Math.random() - 0.5) * 4], i * 3);
+      pVel.set([vx + (Math.random() - 0.5) * 6, 4 + Math.random() * 6, vz + (Math.random() - 0.5) * 6], i * 3);
+      pVida[i] = 1; pTam[i] = tam * (0.7 + Math.random() * 0.8);
+    }
+  }
+  function actualizarPolvo(dt) {
+    for (let i = 0; i < NP; i++) {
+      if (pVida[i] <= 0) continue;
+      pVida[i] -= dt * 0.8; pTam[i] += dt * 3;
+      pPos[i * 3] += pVel[i * 3] * dt; pPos[i * 3 + 1] += pVel[i * 3 + 1] * dt; pPos[i * 3 + 2] += pVel[i * 3 + 2] * dt;
+      pVel[i * 3 + 1] -= dt * 4;
+      if (pVida[i] < 0) pVida[i] = 0;
+    }
+    polvoGeo.attributes.position.needsUpdate = polvoGeo.attributes.vida.needsUpdate = polvoGeo.attributes.tam.needsUpdate = true;
+  }
+  // huellas de las orugas (dos líneas que siguen el rastro de la simulación)
+  const MAXH = 260;
+  const huellas = [-1, 1].map(() => {
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(new Float32Array(MAXH * 3), 3));
+    const l = new THREE.Line(g, new THREE.LineBasicMaterial({ color: C.magenta, transparent: true, opacity: 0.55 }));
+    l.frustumCulled = false; escena.add(l); return l;
+  });
+  function actualizarHuellas() {
+    const r = window.SIM.rastro, n = Math.min(r.length, MAXH);
+    huellas.forEach((linea, k) => {
+      const lado = k ? 1 : -1, a = linea.geometry.attributes.position;
+      for (let i = 0; i < n; i++) {
+        const p = r[r.length - n + i], q = r[Math.max(r.length - n + i - 1, 0)], p2 = r[Math.min(r.length - n + i + 1, r.length - 1)];
+        let dx = p2[0] - q[0], dz = p2[1] - q[1]; const m = Math.hypot(dx, dz) || 1; dx /= m; dz /= m;
+        a.setXYZ(i, p[0] - dz * ORUGA.z * lado, 0.2, p[1] + dx * ORUGA.z * lado);
+      }
+      a.needsUpdate = true; linea.geometry.setDrawRange(0, n);
+    });
+  }
+  // ondas en el suelo (STOP, DEMO, salto)
+  const ondas = [];
+  function onda(color, x, z, max = 60, vel = 70) {
+    const m = new THREE.Mesh(new THREE.RingGeometry(0.9, 1, 64), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.9, side: THREE.DoubleSide, depthWrite: false }));
+    m.rotation.x = -Math.PI / 2; m.position.set(x, 0.3, z); escena.add(m); ondas.push({ m, r: 1, max, vel });
+  }
+  function actualizarOndas(dt) {
+    for (let i = ondas.length - 1; i >= 0; i--) {
+      const o = ondas[i]; o.r += o.vel * dt; o.m.scale.setScalar(o.r); o.m.material.opacity = 0.9 * (1 - o.r / o.max);
+      if (o.r >= o.max) { escena.remove(o.m); o.m.geometry.dispose(); o.m.material.dispose(); ondas.splice(i, 1); }
+    }
+  }
+  addEventListener("retro:demo", () => onda(C.magenta, retro.position.x, retro.position.z, 120, 90));
+  addEventListener("retro:salto", () => setTimeout(() => onda(C.cian, retro.position.x, retro.position.z, 50, 80), 30));
+  addEventListener("retro:error", () => onda(C.rojo, retro.position.x, retro.position.z, 40, 60));
+
+  // ---------- cámaras ----------
+  const MODOS = ["ÓRBITA", "PERSECUCIÓN", "CENITAL"];
+  let modo = Math.max(0, MODOS.indexOf(localStorage.getItem("retro_cam") || "ÓRBITA"));
+  const btnCam = document.getElementById("btnCam");
+  function ponerModo(m) {
+    modo = m; localStorage.setItem("retro_cam", MODOS[m]);
+    btnCam.textContent = "CÁM · " + MODOS[m]; controles.enabled = m === 0;
+  }
+  ponerModo(modo);
+  btnCam.onclick = () => ponerModo((modo + 1) % MODOS.length);
+  addEventListener("keydown", e => {
+    if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+    if (e.key.toLowerCase() === "c") ponerModo((modo + 1) % MODOS.length);
+  });
+
+  // ---------- tamaño ----------
+  function ajustar() {
+    const w = cont.clientWidth, h = cont.clientHeight; if (!w || !h) return;
+    renderer.setSize(w, h, false); camara.aspect = w / h; camara.updateProjectionMatrix();
+    if (composer) composer.setSize(w, h);
+    if (typeof window.ajustarCanvas === "function") window.ajustarCanvas();   // el minimapa cambió de tamaño
+  }
+  new ResizeObserver(ajustar).observe(cont); ajustar();
+
+  // ---------- bucle ----------
+  const reloj = new THREE.Clock(), objetivo = new THREE.Vector3(), previo = new THREE.Vector3(), tmp = new THREE.Vector3();
+  let cmdPrevio = null, visible = true;
+  document.addEventListener("visibilitychange", () => { visible = !document.hidden; });
+  function cuadro() {
+    requestAnimationFrame(cuadro);
+    if (!visible) return;
+    const dt = Math.min(0.05, reloj.getDelta()), t = reloj.elapsedTime, s = window.SIM;
+    if (!s) return;
+    const rumbo = s.rumbo * Math.PI / 180;
+    retro.position.set(s.x, 0, s.y);
+    retro.rotation.y = -rumbo;
+    torre.rotation.y = -s.cabina * Math.PI / 180;
+    pluma.rotation.z = THREE.MathUtils.lerp(-0.28, 0.72, s.pala);
+    balancin.rotation.z = THREE.MathUtils.lerp(-1.75, -0.95, s.pala);
+    cucharon.rotation.z = THREE.MathUtils.lerp(-0.55, 0.55, s.pala);
+    actualizarPiston();
+
+    // orugas: avanzan con la velocidad; al girar cada lado va en sentido contrario
+    zapatas.forEach(o => {
+      o.fase += (s.v * 0.35 + (s.giro || 0) * 0.12 * o.lado) * dt;
+      moverZapatas(o);
+    });
+    const trabajando = s.activo && s.activo !== "DETENER";
+    // polvo detrás de las orugas
+    if (Math.abs(s.v) > 15 || s.giro) {
+      const atras = -Math.sign(s.v || 1);
+      for (const lado of [-1, 1]) {
+        tmp.set(atras * ORUGA.largo / 2, 1.5, lado * ORUGA.z); retro.localToWorld(tmp);
+        if (Math.random() < (MOVIL ? 0.5 : 0.9)) emitirPolvo(tmp.x, tmp.y, tmp.z, Math.cos(rumbo) * atras * 8, Math.sin(rumbo) * atras * 8, 1, 3.2);
+      }
+    }
+    // el cucharón levanta polvo al tocar el suelo
+    if (s.palaVel < 0 && s.pala < 0.08) {
+      tmp.set(6, -8, 0); cucharon.localToWorld(tmp); emitirPolvo(tmp.x, 1, tmp.z, 0, 0, 2, 4.5);
+    }
+    actualizarPolvo(dt); actualizarHuellas(); actualizarOndas(dt);
+
+    // luces: torreta gira y destella si trabaja; faros encendidos con enlace
+    const enLinea = document.getElementById("enlace")?.textContent === "ENLACE OK";
+    torreta.rotation.y += dt * (trabajando ? 7 : 1.2);
+    haz.visible = trabajando; luzTorreta.intensity = trabajando ? 260 + Math.sin(t * 14) * 120 : 0;
+    faros.intensity = enLinea ? 3200 : 0;
+    brilloSuelo.position.set(retro.position.x, 6, retro.position.z);
+    brilloSuelo.color.setHex(s.activo === "DETENER" ? C.rojo : C.cian);
+    brilloSuelo.intensity = trabajando ? 1400 : 700;
+    sol.position.set(retro.position.x - 90, 160, retro.position.z + 70); sol.target.position.copy(retro.position);
+
+    if (s.cmd !== cmdPrevio) {               // comando confirmado nuevo
+      if (cmdPrevio !== null && s.cmd === "DETENER") onda(C.rojo, retro.position.x, retro.position.z, 45, 75);
+      cmdPrevio = s.cmd;
+    }
+
+    // cámara
+    objetivo.set(retro.position.x, 10, retro.position.z);
+    if (modo === 0) {
+      tmp.copy(objetivo).sub(previo);
+      if (tmp.lengthSq() > 2500) tmp.set(0, 0, 0);       // al reaparecer al otro lado, no arrastrar la cámara
+      camara.position.add(tmp); controles.target.copy(objetivo); controles.update();
+    } else {
+      const ang = rumbo;
+      const deseada = modo === 1
+        ? tmp.set(retro.position.x - Math.cos(ang) * 110, 58, retro.position.z - Math.sin(ang) * 110)
+        : tmp.set(retro.position.x - 1, 250, retro.position.z + 30);
+      camara.position.lerp(deseada, 1 - Math.pow(0.02, dt));
+      camara.lookAt(modo === 1 ? objetivo.clone().add(new THREE.Vector3(Math.cos(ang) * 30, 0, Math.sin(ang) * 30)) : objetivo);
+      controles.target.copy(objetivo);
+    }
+    previo.copy(objetivo);
+    composer ? composer.render() : renderer.render(escena, camara);
+  }
+  cuadro();
+  window.RETRO3D = true;
+} catch (e) {
+  console.error("Escena 3D no disponible:", e);
+  document.querySelector(".arena").classList.remove("modo3d");
+  window.RETRO3D = false;
+}
+
 </script>
 </body>
 </html>
