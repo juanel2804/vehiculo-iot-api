@@ -1,10 +1,52 @@
-# API IoT Vehículo — Práctica 2.5 (entorno Dev local)
+# API IoT Vehículo — Práctica 2.6 (Amazon EC2 + RDS, HTTPS/WSS)
 
 API en **Python + FastAPI** con programación orientada a objetos que controla un vehículo IoT usando los
-**21 Stored Procedures** del esquema `vehiculo_iot` en **Amazon RDS** (MySQL). Corre solo en
-`http://localhost:8000`; el despliegue público (EC2, HTTPS/WSS) es de la práctica 2.6.
+**21 Stored Procedures** del esquema `vehiculo_iot` en **Amazon RDS** (MySQL). Es la misma solución de la
+práctica 2.5 (etiqueta `v2.5-entregada`), ahora **publicada en Amazon EC2** con HTTPS y WebSocket seguro (WSS).
 
-## Ejecutar en local
+## Servicio público
+
+| Recurso | URL |
+|---|---|
+| API (HTTPS) | <https://100-63-187-92.sslip.io> |
+| Swagger UI | <https://100-63-187-92.sslip.io/docs> |
+| Página de control | <https://100-63-187-92.sslip.io/control/> |
+| WebSocket (WSS) del vehículo 1 | `wss://100-63-187-92.sslip.io/ws/vehiculos/1` |
+| Página en GitHub Pages | <https://juanel2804.github.io/vehiculo-iot-api/> (apunta a la API pública) |
+
+## Arquitectura de despliegue
+
+```
+Cliente (Thunder Client / Swagger / navegador / futuro ESP32)
+        │  HTTPS 443  /  WSS 443
+        ▼
+Amazon EC2 (Windows Server 2025, IP elástica)
+   Caddy  ── certificado Let's Encrypt automático ──►  uvicorn 127.0.0.1:8000  (FastAPI, POO)
+        │  MySQL 3306 (solo desde el Security Group de la EC2)
+        ▼
+Amazon RDS for MySQL  ·  vehiculo_iot  ·  6 tablas + 21 Stored Procedures
+```
+
+* **Persistencia:** `deploy/instalar_servicios.ps1` registra dos tareas de inicio de Windows (`IoT-API` y `IoT-Caddy`,
+  cuenta SYSTEM, reinicio automático). La API sigue operando con VS Code o la sesión de administración cerrados.
+* **HTTPS/WSS:** Caddy (`deploy/Caddyfile.example`) termina TLS y reenvía HTTP y WebSocket a uvicorn, que solo
+  escucha en `127.0.0.1`. Puertos públicos: 22 (administración), 80 (validación del certificado) y 443.
+* **RDS no queda abierto:** el Security Group de RDS permite MySQL 3306 **solo desde el Security Group de la EC2**,
+  y la API se conecta con el usuario `api_iot` (solo `EXECUTE` sobre `vehiculo_iot`, ver `sql/01_usuario_api.sql`).
+* **Secretos:** `.env` (credenciales de RDS y `API_KEY`) existe solo en el servidor y está en `.gitignore`.
+
+### Desplegar o actualizar desde GitHub (en la EC2)
+
+```powershell
+git clone https://github.com/juanel2804/vehiculo-iot-api.git C:\iot\vehiculo-iot-api
+cd C:\iot\vehiculo-iot-api
+python -m venv .venv ; .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+copy .env.example .env            # llenar DB_HOST, DB_USER, DB_PASSWORD, API_KEY, CORS_ORIGINS
+.\deploy\instalar_servicios.ps1   # una sola vez (Caddy en C:\caddy según deploy\Caddyfile.example)
+.\deploy\actualizar.ps1           # en cada actualización: git pull + reinicio de la API
+```
+
+## Ejecutar en local (desarrollo)
 
 ```powershell
 python -m venv .venv
@@ -14,16 +56,11 @@ copy .env.example .env        # llena DB_HOST, DB_USER, DB_PASSWORD y API_KEY
 uvicorn app.main:app --reload --port 8000
 ```
 
-* Swagger UI: <http://localhost:8000/docs>
-* Página de control: <http://localhost:8000/control/> — botones (y teclas W/S/A/D/J/L/R/F/P) para mover el vehículo,
-  estado e historial en vivo, DEMO con barra de progreso y cancelación, y registro de eventos WebSocket.
-  Escribe la `X-API-Key` arriba a la derecha (se guarda solo en tu navegador).
-* Página publicada: <https://juanel2804.github.io/vehiculo-iot-api/> — el mismo control servido por GitHub Pages
-  (workflow `.github/workflows/pages.yml`). Solo se publica el HTML: se conecta a la API que corre en
-  `http://localhost:8000` de tu computadora (campo de URL arriba a la izquierda). La primera vez el navegador pide
-  permiso para acceder a la red local: hay que aceptarlo. La API solo acepta ese origen (`CORS_ORIGINS`).
-* El Security Group de RDS debe permitir MySQL TCP 3306 desde tu IP (My IP).
-* Se recomienda un usuario con privilegios mínimos: `sql/01_usuario_api.sql` crea `api_iot` solo con `EXECUTE`.
+* Swagger UI local: <http://localhost:8000/docs> · Página de control: <http://localhost:8000/control/>
+  (botones y teclas W/S/A/D/J/L/R/F/P, estado e historial en vivo, DEMO con barra de progreso y cancelación,
+  registro de eventos WebSocket). Escribe la `X-API-Key` arriba a la derecha (se guarda solo en tu navegador).
+* `CORS_ORIGINS` lista los sitios web que pueden llamar a la API desde un navegador (por defecto GitHub Pages).
+* En local, el Security Group de RDS debe permitir MySQL 3306 desde tu IP.
 * `.env` está en `.gitignore`: nunca se sube. `.env.example` no lleva secretos.
 
 ## Arquitectura (POO, una responsabilidad por clase)
@@ -56,7 +93,8 @@ Eliminaciones, `POST /movimientos`, `.../conexion` y el control de DEMO (`inicia
 
 ## WebSocket (no aparece en Swagger)
 
-URL: `ws://localhost:8000/ws/vehiculos/{id_vehiculo}` — varios clientes por vehículo; cada uno recibe solo eventos de su vehículo.
+URL pública: `wss://100-63-187-92.sslip.io/ws/vehiculos/{id_vehiculo}` (en local: `ws://localhost:8000/ws/vehiculos/{id_vehiculo}`) — varios clientes por vehículo; cada uno recibe solo eventos de su vehículo.
+Al conectarse (o reconectarse) el cliente recibe de inmediato el último estado guardado en RDS (`estado_inicial`).
 Se puede enviar el texto `ping` y responde `pong`. Si el vehículo no existe, envía un evento `error` y cierra con código 4404.
 
 Todos los mensajes llevan `tipo`, `id_vehiculo` y `timestamp` (UTC, ISO 8601).

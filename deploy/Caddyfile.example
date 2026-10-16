@@ -1,0 +1,6 @@
+# Caddy: termina HTTPS/WSS (certificado Let's Encrypt automático) y reenvía a uvicorn en 127.0.0.1:8000.
+# Cambia el dominio por el tuyo. Los puertos 80 y 443 deben estar abiertos en el Security Group y en el firewall de Windows.
+100-63-187-92.sslip.io {
+    encode gzip
+    reverse_proxy 127.0.0.1:8000
+}

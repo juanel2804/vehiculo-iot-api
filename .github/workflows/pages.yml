@@ -1,5 +1,5 @@
 # Publica la página de control (carpeta web/) en GitHub Pages en cada push a main.
-# Solo se publica el HTML estático: la API sigue corriendo en localhost:8000 (práctica 2.5).
+# Solo se publica el HTML estático: la API corre en EC2 (https://100-63-187-92.sslip.io).
 name: Publicar control web
 
 on:

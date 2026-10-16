@@ -1,4 +1,4 @@
-"""WebSocket por vehículo: ws://localhost:8000/ws/vehiculos/{id_vehiculo} (Swagger no documenta WebSocket; ver README)."""
+"""WebSocket por vehículo: wss://<dominio>/ws/vehiculos/{id_vehiculo} (ws://localhost:8000 en local) (Swagger no documenta WebSocket; ver README)."""
 import asyncio
 import logging
 

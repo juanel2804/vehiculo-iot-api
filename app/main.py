@@ -18,11 +18,11 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 log = logging.getLogger("iot.api")
 
 DESCRIPCION = """
-API local (Dev) para controlar un vehículo IoT. Usa los **21 Stored Procedures** del esquema `vehiculo_iot` en Amazon RDS.
+API pública (Amazon EC2 + HTTPS) para controlar un vehículo IoT. Usa los **21 Stored Procedures** del esquema `vehiculo_iot` en Amazon RDS.
 
 * **Movimiento individual**: `POST /movimientos` → actualiza `estado_vehiculo` + registra `historial_comandos` (una transacción) → evento WebSocket.
 * **DEMO**: `POST /vehiculos/{id}/demos/{id_demo}/iniciar` → N movimientos por WebSocket; **no** se agregan al historial.
-* **WebSocket**: `ws://localhost:8000/ws/vehiculos/{id_vehiculo}` (Swagger no documenta WebSocket; ver README).
+* **WebSocket seguro (WSS)**: `wss://100-63-187-92.sslip.io/ws/vehiculos/{id_vehiculo}` (Swagger no documenta WebSocket; ver README).
 * Las operaciones destructivas y de control exigen el header **X-API-Key** (botón *Authorize*).
 """
 
@@ -47,11 +47,11 @@ async def lifespan(app: FastAPI):
     app.state.servicios.db.cerrar()
 
 
-app = FastAPI(title="API IoT Vehículo (Dev local)", version="1.0.0", description=DESCRIPCION,
+app = FastAPI(title="API IoT Vehículo (EC2 + RDS)", version="2.6.0", description=DESCRIPCION,
               openapi_tags=ETIQUETAS, lifespan=lifespan)
 
-# La página publicada (https://juanel2804.github.io/...) llama a esta API local desde el navegador
-# (allow_private_network: el navegador deja que una página pública hable con la API en localhost)
+# La página publicada (https://juanel2804.github.io/...) llama a esta API desde el navegador (CORS_ORIGINS);
+# allow_private_network solo sirve cuando la API corre en una red local (práctica 2.5)
 app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in get_settings().cors_origins.split(",") if o.strip()],
                    allow_methods=["GET", "POST"], allow_headers=["Content-Type", "X-API-Key"], allow_private_network=True)
 
