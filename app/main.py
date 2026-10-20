@@ -62,6 +62,8 @@ app.include_router(ws.router)
 
 # Página web de control (HTML + JS que consume esta misma API y el WebSocket)
 app.mount("/control", StaticFiles(directory=Path(__file__).resolve().parent.parent / "web", html=True), name="control")
+# App móvil del examen 2.6: criterios del profesor con pruebas en vivo y evidencias
+app.mount("/examen", StaticFiles(directory=Path(__file__).resolve().parent.parent / "examen", html=True), name="examen")
 
 
 @app.get("/", include_in_schema=False)

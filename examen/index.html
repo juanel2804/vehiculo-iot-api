@@ -1,0 +1,992 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Examen 2.6 · API IoT</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icono-192.png">
+<link rel="apple-touch-icon" href="icono-192.png">
+<style>
+  :root {
+    --bg:#0f1115; --card:#171a21; --card2:#1e222b; --borde:#2a2f3a; --txt:#e8eaef; --tenue:#8e95a3;
+    --rojo:#e5383b; --verde:#34c759; --ambar:#f5b83d; --azul:#4aa3ff; --morado:#b38cff; --cian:#3fd0d9;
+    --radio:14px; --mono:ui-monospace, "Cascadia Code", Consolas, monospace;
+  }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { margin:0; background:var(--bg); color:var(--txt); font:15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { padding-bottom:calc(74px + env(safe-area-inset-bottom)); }
+  .app { max-width:560px; margin:0 auto; }
+  button { font:inherit; color:inherit; border:0; cursor:pointer; }
+  a { color:var(--azul); }
+  code, .mono { font-family:var(--mono); font-size:12.5px; }
+
+  /* Encabezado */
+  header { position:sticky; top:0; z-index:20; background:rgba(15,17,21,.92); backdrop-filter:blur(12px);
+           padding:calc(10px + env(safe-area-inset-top)) 16px 10px; border-bottom:1px solid var(--borde); }
+  .cab { display:flex; align-items:center; gap:12px; }
+  .cab h1 { margin:0; font-size:17px; line-height:1.2; }
+  .cab small { color:var(--tenue); font-size:12px; display:block; }
+  .anillo { width:46px; height:46px; flex:none; position:relative; }
+  .anillo svg { transform:rotate(-90deg); }
+  .anillo b { position:absolute; inset:0; display:grid; place-items:center; font-size:11.5px; }
+  .engrane { margin-left:auto; width:38px; height:38px; border-radius:10px; background:var(--card2); display:grid; place-items:center; flex:none; }
+  .llave-estado { font-size:11.5px; color:var(--tenue); margin-top:6px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .punto { width:8px; height:8px; border-radius:50%; display:inline-block; background:var(--tenue); }
+  .punto.ok { background:var(--verde); } .punto.mal { background:var(--rojo); }
+
+  main { padding:14px 14px 0; }
+  .vista { display:none; } .vista.activa { display:block; }
+  h2.sec { font-size:13px; text-transform:uppercase; letter-spacing:.6px; color:var(--tenue); margin:22px 4px 8px; }
+  .card { background:var(--card); border:1px solid var(--borde); border-radius:var(--radio); padding:14px; margin-bottom:10px; }
+  .boton { background:var(--rojo); color:#fff; padding:11px 14px; border-radius:11px; font-weight:600; display:inline-flex; align-items:center; gap:8px; justify-content:center; }
+  .boton.sec { background:var(--card2); color:var(--txt); border:1px solid var(--borde); }
+  .boton.chico { padding:7px 11px; font-size:13px; border-radius:9px; }
+  .boton:disabled { opacity:.5; }
+  .fila { display:flex; gap:8px; flex-wrap:wrap; }
+  .ancho { width:100%; }
+
+  /* Criterios */
+  .seccion { border-radius:var(--radio); background:var(--card); border:1px solid var(--borde); margin-bottom:10px; overflow:hidden; }
+  .seccion > summary { list-style:none; padding:14px; display:flex; gap:10px; align-items:center; cursor:pointer; }
+  .seccion > summary::-webkit-details-marker { display:none; }
+  .seccion > summary .num { width:30px; height:30px; border-radius:9px; background:var(--card2); display:grid; place-items:center; font-weight:700; color:var(--rojo); flex:none; }
+  .seccion > summary .t { font-weight:650; flex:1; }
+  .seccion > summary .cnt { font-size:12px; color:var(--tenue); }
+  .seccion[open] > summary { border-bottom:1px solid var(--borde); }
+  .crit { padding:14px; border-bottom:1px solid var(--borde); }
+  .crit:last-child { border-bottom:0; }
+  .crit .top { display:flex; gap:10px; align-items:flex-start; }
+  .crit .n { font-family:var(--mono); font-weight:700; color:var(--tenue); min-width:24px; }
+  .crit h3 { margin:0; font-size:15px; flex:1; }
+  .crit ul { margin:8px 0 10px; padding-left:20px; color:#c9ced8; font-size:13.5px; }
+  .crit li { margin:3px 0; }
+  .chip { font-size:11px; font-weight:700; padding:3px 8px; border-radius:20px; background:var(--card2); color:var(--tenue); white-space:nowrap; }
+  .chip.ok { background:rgba(52,199,89,.15); color:var(--verde); }
+  .chip.mal { background:rgba(229,56,59,.15); color:var(--rojo); }
+  .chip.run { background:rgba(74,163,255,.15); color:var(--azul); }
+  .chip.ev { background:rgba(179,140,255,.14); color:var(--morado); }
+  .chip.llave { background:rgba(245,184,61,.15); color:var(--ambar); }
+  .res { margin-top:10px; background:#0b0d11; border:1px solid var(--borde); border-radius:10px; padding:8px 10px; font:12px/1.55 var(--mono); max-height:340px; overflow:auto; display:none; }
+  .res.vis { display:block; }
+  .res .l { display:flex; gap:6px; }
+  .res .ok { color:var(--verde); } .res .mal { color:var(--rojo); } .res .info { color:var(--tenue); } .res .ev { color:var(--cian); }
+  .res .det { color:#9aa3b2; word-break:break-word; }
+
+  /* Rúbrica */
+  table.rub { width:100%; border-collapse:collapse; font-size:13.5px; }
+  .rub td, .rub th { padding:9px 6px; border-bottom:1px solid var(--borde); text-align:left; vertical-align:top; }
+  .rub th { color:var(--tenue); font-size:12px; font-weight:600; }
+  .rub td.p { text-align:right; font-family:var(--mono); white-space:nowrap; }
+  .rub tr.total td { font-weight:800; border-bottom:0; }
+  .barra { height:8px; background:var(--card2); border-radius:6px; overflow:hidden; margin-top:6px; }
+  .barra i { display:block; height:100%; width:0; background:linear-gradient(90deg, var(--rojo), var(--ambar), var(--verde)); transition:width .4s; }
+
+  /* En vivo */
+  .estado-grande { display:flex; align-items:center; gap:14px; }
+  .estado-grande .cmd { font-size:clamp(17px, 6vw, 26px); font-weight:800; letter-spacing:.3px; overflow-wrap:anywhere; }
+  .estado-grande .meta { color:var(--tenue); font-size:12.5px; }
+  .pad { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
+  .pad button { background:var(--card2); border:1px solid var(--borde); border-radius:12px; padding:13px 6px; font-size:12.5px; font-weight:650; }
+  .pad button:active { transform:scale(.97); background:#262b36; }
+  .pad button.det { background:rgba(229,56,59,.18); border-color:rgba(229,56,59,.5); }
+  .progreso { height:10px; background:var(--card2); border-radius:6px; overflow:hidden; margin:10px 0 6px; }
+  .progreso i { display:block; height:100%; width:0; background:var(--morado); transition:width .3s; }
+  .clientes { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .cliente { background:#0b0d11; border:1px solid var(--borde); border-radius:10px; padding:8px; min-width:0; }
+  .cliente h4 { margin:0 0 6px; font-size:12px; display:flex; align-items:center; gap:6px; }
+  .log { font:11px/1.45 var(--mono); height:210px; overflow:auto; }
+  .log div { padding:3px 0; border-bottom:1px dashed #222733; word-break:break-word; }
+  .log .t { color:var(--tenue); }
+  .tipo-estado_inicial { color:var(--cian); } .tipo-movimiento { color:var(--verde); } .tipo-demo_inicio, .tipo-demo_fin { color:var(--morado); }
+  .tipo-demo_movimiento { color:var(--ambar); } .tipo-demo_cancelada, .tipo-error, .tipo-demo_error { color:var(--rojo); } .tipo-conexion { color:var(--azul); }
+  .hist { font:12px/1.5 var(--mono); }
+  .hist div { display:flex; justify-content:space-between; gap:8px; padding:5px 0; border-bottom:1px solid var(--borde); }
+  .hist div span:last-child { color:var(--tenue); }
+
+  /* Evidencias */
+  .galeria { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .fig { background:var(--card); border:1px solid var(--borde); border-radius:12px; overflow:hidden; text-align:left; padding:0; }
+  .fig img { width:100%; height:110px; object-fit:cover; object-position:top; display:block; background:#0b0d11; }
+  .fig span { display:block; padding:8px 9px; font-size:12px; color:#c9ced8; }
+  .fig b { color:var(--rojo); }
+  .visor { position:fixed; inset:0; z-index:80; background:#000; display:none; flex-direction:column; }
+  .visor .lienzo { display:flex; align-items:center; }
+  .visor.zoom .lienzo { display:block; }
+  .visor.vis { display:flex; }
+  .visor .barra-v { display:flex; align-items:center; gap:10px; padding:calc(10px + env(safe-area-inset-top)) 14px 10px; }
+  .visor .barra-v b { flex:1; font-size:14px; }
+  .visor .lienzo { flex:1; overflow:auto; -webkit-overflow-scrolling:touch; }
+  .visor img { width:100%; display:block; }
+  .visor.zoom img { width:220%; max-width:none; }
+  .visor p { margin:0; padding:10px 14px calc(14px + env(safe-area-inset-bottom)); font-size:13px; color:#c9ced8; }
+
+  /* Enlaces */
+  .enlace { display:flex; align-items:center; gap:12px; text-decoration:none; color:var(--txt); }
+  .enlace .ic { width:40px; height:40px; border-radius:11px; display:grid; place-items:center; background:var(--card2); flex:none; font-size:18px; }
+  .enlace div { flex:1; min-width:0; }
+  .enlace small { display:block; color:var(--tenue); font-family:var(--mono); font-size:11.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+  /* Navegación inferior */
+  nav { position:fixed; bottom:0; left:0; right:0; z-index:30; background:rgba(20,23,29,.96); backdrop-filter:blur(12px);
+        border-top:1px solid var(--borde); padding-bottom:env(safe-area-inset-bottom); }
+  nav .in { max-width:560px; margin:0 auto; display:grid; grid-template-columns:repeat(4, 1fr); }
+  nav button { background:none; padding:9px 0 8px; display:flex; flex-direction:column; align-items:center; gap:3px; font-size:11px; color:var(--tenue); }
+  nav button svg { width:23px; height:23px; }
+  nav button.activa { color:var(--rojo); }
+
+  /* Hoja de ajustes */
+  .hoja { position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.55); display:none; align-items:flex-end; justify-content:center; }
+  .hoja.vis { display:flex; }
+  .hoja .panel { background:var(--card); width:100%; max-width:560px; border-radius:18px 18px 0 0; padding:18px 16px calc(18px + env(safe-area-inset-bottom)); border-top:1px solid var(--borde); }
+  .hoja input { width:100%; padding:12px; border-radius:10px; border:1px solid var(--borde); background:#0b0d11; color:var(--txt); font:14px var(--mono); margin:8px 0 12px; }
+  .toast { position:fixed; left:50%; bottom:calc(86px + env(safe-area-inset-bottom)); transform:translateX(-50%); background:#2a2f3a; padding:10px 14px; border-radius:10px; font-size:13px; z-index:70; opacity:0; transition:opacity .25s; pointer-events:none; max-width:90%; }
+  .toast.vis { opacity:1; }
+  .nota { font-size:12.5px; color:var(--tenue); }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="cab">
+      <div class="anillo" title="Criterios verificados">
+        <svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="19" fill="none" stroke="#2a2f3a" stroke-width="5"/>
+          <circle id="arco" cx="23" cy="23" r="19" fill="none" stroke="#34c759" stroke-width="5" stroke-linecap="round" stroke-dasharray="119.4" stroke-dashoffset="119.4" style="transition:stroke-dashoffset .5s"/></svg>
+        <b id="anilloTxt">0/24</b>
+      </div>
+      <div>
+        <h1>Examen 2.6 · API IoT en AWS</h1>
+        <small>López García Juan Elpidio · M.C. Víctor Manuel Pinedo Fernández</small>
+      </div>
+      <button class="engrane" id="btnAjustes" aria-label="Ajustes">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2 20 3M17 6l3 3M15 8l2 2"/></svg>
+      </button>
+    </div>
+    <div class="llave-estado">
+      <span><span class="punto" id="ptoApi"></span> API <span id="txtApi">…</span></span>
+      <span><span class="punto" id="ptoWs"></span> WSS <span id="txtWs">…</span></span>
+      <span><span class="punto" id="ptoKey"></span> <span id="txtKey">sin X-API-Key</span></span>
+    </div>
+  </header>
+
+  <main>
+    <!-- ===================== CRITERIOS ===================== -->
+    <section class="vista activa" id="v-criterios">
+      <div class="card">
+        <div style="font-weight:700;margin-bottom:4px">Migración y publicación de una API para vehículo IoT en AWS</div>
+        <div class="nota">Python · FastAPI · POO · Amazon EC2 · Amazon RDS · MySQL · WebSocket. Cada criterio se puede comprobar <b>en vivo</b> contra el servidor público o abrir su evidencia del reporte.</div>
+        <div class="fila" style="margin-top:12px">
+          <button class="boton" id="btnTodo">▶ Ejecutar todas las pruebas</button>
+          <button class="boton sec" id="btnLimpiar">Reiniciar</button>
+        </div>
+        <div class="nota" id="txtTodo" style="margin-top:8px"></div>
+      </div>
+      <div id="listaCriterios"></div>
+
+      <h2 class="sec">8. Criterios de evaluación (100 puntos)</h2>
+      <div class="card">
+        <table class="rub" id="tablaRubrica"></table>
+        <div class="barra"><i id="barraRub"></i></div>
+        <div class="nota" style="margin-top:8px">Los puntos se marcan cuando sus pruebas en vivo pasan. Se evalúa la demostración funcional del escenario público.</div>
+      </div>
+    </section>
+
+    <!-- ===================== EN VIVO ===================== -->
+    <section class="vista" id="v-vivo">
+      <h2 class="sec" style="margin-top:4px">Vehículo 1 · último estado (RDS)</h2>
+      <div class="card">
+        <div class="estado-grande">
+          <div style="font-size:34px">🚜</div>
+          <div style="flex:1;min-width:0">
+            <div class="cmd" id="vivoCmd">—</div>
+            <div class="meta" id="vivoMeta">Esperando estado_inicial…</div>
+          </div>
+        </div>
+      </div>
+
+      <h2 class="sec">Movimiento individual · POST /movimientos</h2>
+      <div class="card">
+        <div class="pad" id="pad"></div>
+        <div class="nota" style="margin-top:8px">Actualiza estado + historial en una transacción y notifica a los dos clientes WSS.</div>
+      </div>
+
+      <h2 class="sec">DEMO · N movimientos por WSS (sin historial)</h2>
+      <div class="card">
+        <div class="fila">
+          <button class="boton" id="btnDemo">▶ Iniciar DEMO 1</button>
+          <button class="boton sec" id="btnCancelar">■ Cancelar</button>
+        </div>
+        <div class="progreso"><i id="demoBarra"></i></div>
+        <div class="nota" id="demoTxt">Sin DEMO en ejecución.</div>
+      </div>
+
+      <h2 class="sec">Dos clientes WSS · wss://…/ws/vehiculos/1</h2>
+      <div class="clientes">
+        <div class="cliente"><h4><span class="punto" id="ptoA"></span> Cliente A</h4><div class="log" id="logA"></div></div>
+        <div class="cliente"><h4><span class="punto" id="ptoB"></span> Cliente B</h4><div class="log" id="logB"></div></div>
+      </div>
+      <div class="fila" style="margin-top:8px">
+        <button class="boton sec chico" id="btnReconectar">↻ Reconectar (recibe estado_inicial)</button>
+        <button class="boton sec chico" id="btnLimpiarLog">Limpiar</button>
+      </div>
+
+      <h2 class="sec">Historial · GET /vehiculos/1/historial (máx. 10)</h2>
+      <div class="card hist" id="vivoHist"><span class="nota">Cargando…</span></div>
+    </section>
+
+    <!-- ===================== EVIDENCIAS ===================== -->
+    <section class="vista" id="v-evidencias">
+      <div class="card">
+        <a class="enlace" href="Practica-2.6-Reporte.pdf" target="_blank" rel="noopener">
+          <span class="ic">📄</span><div><b>Reporte de evidencias (PDF)</b><small>Practica-2.6-Reporte.pdf · 17 páginas</small></div><span>›</span>
+        </a>
+      </div>
+      <div class="galeria" id="galeria"></div>
+    </section>
+
+    <!-- ===================== ENLACES ===================== -->
+    <section class="vista" id="v-enlaces">
+      <h2 class="sec" style="margin-top:4px">Servicio público</h2>
+      <div id="listaEnlaces"></div>
+      <h2 class="sec">Arquitectura</h2>
+      <div class="card nota" style="color:#c9ced8">
+        Cliente externo → <b>HTTPS/WSS 443</b> → Amazon EC2 (Windows Server 2025, IP elástica 100.63.187.92) → <b>Caddy</b> (Let's Encrypt) →
+        <b>uvicorn 127.0.0.1:8000</b> (FastAPI, POO; tareas de inicio IoT-API e IoT-Caddy) → <b>MySQL 3306</b> → Amazon RDS
+        <code>vehiculo_iot</code> (6 tablas, 21 SP, usuario <code>api_iot</code> solo EXECUTE).
+      </div>
+      <h2 class="sec">Conclusiones</h2>
+      <div class="card nota" style="color:#c9ced8" id="conclusiones"></div>
+    </section>
+  </main>
+</div>
+
+<nav><div class="in">
+  <button data-v="criterios" class="activa"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>Criterios</button>
+  <button data-v="vivo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0"/><circle cx="12" cy="19.5" r="1"/><path d="M1.5 9a15 15 0 0 1 21 0"/></svg>En vivo</button>
+  <button data-v="evidencias"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>Evidencias</button>
+  <button data-v="enlaces"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>Enlaces</button>
+</div></nav>
+
+<div class="visor" id="visor">
+  <div class="barra-v"><b id="visorTit"></b>
+    <button class="boton sec chico" id="visorZoom">Zoom</button>
+    <button class="boton sec chico" id="visorCerrar">✕</button></div>
+  <div class="lienzo"><img id="visorImg" alt=""></div>
+  <p id="visorTxt"></p>
+</div>
+
+<div class="hoja" id="hoja"><div class="panel">
+  <div style="font-weight:700">X-API-Key</div>
+  <div class="nota">Las operaciones de control (POST de movimientos, DEMO, conexión y eliminaciones) exigen el header <code>X-API-Key</code>. Se guarda solo en este dispositivo y nunca se muestra.</div>
+  <input id="inKey" type="password" autocomplete="off" placeholder="Escribe la llave">
+  <div class="fila"><button class="boton" id="btnGuardarKey">Guardar</button><button class="boton sec" id="btnBorrarKey">Borrar</button><button class="boton sec" id="btnCerrarHoja">Cerrar</button></div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   Configuración
+   ============================================================ */
+const API = location.protocol.startsWith('http') && !location.hostname.match(/^(localhost|127\.)/) && location.host.includes('sslip.io')
+  ? location.origin : 'https://100-63-187-92.sslip.io';
+const WSS = API.replace(/^http/, 'ws');
+const REPO = 'juanel2804/vehiculo-iot-api';
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hora = (d = new Date()) => d.toLocaleTimeString('es-MX', {hour12:false}) + '.' + String(d.getMilliseconds()).padStart(3, '0');
+const dormir = ms => new Promise(r => setTimeout(r, ms));
+let KEY = ''; try { KEY = localStorage.getItem('x-api-key') || ''; } catch {}
+
+function toast(t) { const e = $('#toast'); e.textContent = t; e.classList.add('vis'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('vis'), 2600); }
+
+/* ============================================================
+   Figuras del reporte
+   ============================================================ */
+const FIG = {
+  arq:  ['fig_arquitectura', 1, 'Arquitectura pública: clientes externos, Amazon EC2 con Caddy y FastAPI, y Amazon RDS for MySQL.'],
+  ec2:  ['fig_ec2_servicios', 2, 'Servidor por SSH: tareas de inicio IoT-API e IoT-Caddy en ejecución, puertos y commit desplegado.'],
+  rds:  ['fig_rds', 3, 'Desde la EC2: conexión a RDS con api_iot (solo EXECUTE) y los 21 Stored Procedures.'],
+  sw1:  ['fig_swagger_1', 4, 'Swagger UI público por HTTPS con la descripción de los flujos y la URL del WSS.'],
+  sw2:  ['fig_swagger_2', 5, 'Endpoints agrupados por etiqueta; control y eliminación con candado X-API-Key.'],
+  gh1:  ['fig_github_1', 6, 'Repositorio GitHub con el código, la carpeta deploy y el README.'],
+  gh2:  ['fig_github_2', 7, 'README: URL pública WSS, eventos y campos de cada mensaje JSON.'],
+  p1c:  ['fig_p1_conexion', 8, 'Prueba 1: dos clientes WSS reciben estado_inicial con el último estado de RDS.'],
+  p1p:  ['fig_p1_post', 9, 'Prueba 1: POST /movimientos 201 y el evento movimiento en ambos clientes.'],
+  p1e:  ['fig_p1_estado', 10, 'Prueba 1: cinco POST en ambos clientes; estado e historial persistidos.'],
+  p2:   ['fig_p2_historial', 11, 'Prueba 2: GET historial con 10 movimientos, del más reciente al más antiguo.'],
+  p3d:  ['fig_p3_demo', 12, 'Prueba 3: demo_inicio, 8 demo_movimiento temporizados y demo_fin.'],
+  p3h:  ['fig_p3_sin_historial', 13, 'Prueba 3: estado tras la DEMO e historial idéntico (sin registros DEMO).'],
+  can:  ['fig_p3_cancelar', 14, 'DEMO simultánea 409, cancelación con demo_cancelada y POST sin llave 401.'],
+  nwm:  ['fig_newman', 15, 'Colección de Postman con Newman contra la EC2: 15 peticiones, 21 aserciones, 0 fallos.'],
+  int:  ['fig_integral', 16, 'Prueba integral contra la URL pública: 46/46 verificaciones.'],
+  ctl:  ['fig_control', 17, 'Página de control pública que usa la misma API y el mismo WSS.'],
+};
+
+/* ============================================================
+   Criterios del profesor
+   ============================================================ */
+const SECCIONES = [
+  ['1', 'Preparar AWS y migrar el proyecto', [
+    [1, 'Recupera y prepara el proyecto de la práctica 2.5', ['La solución pública corresponde al mismo proyecto desarrollado en la práctica 2.5.', 'Se conserva su organización en Python, FastAPI y Programación Orientada a Objetos.', 'El repositorio GitHub contiene el código y los archivos necesarios para su evaluación.'], 'repo', ['gh1', 'arq']],
+    [2, 'Configura Amazon EC2 y la comunicación con RDS', ['La API opera en Amazon EC2 y se comunica con la base vehiculo_iot en Amazon RDS for MySQL.', 'Se comprueba la conectividad y la conservación de las seis tablas y los 21 procedimientos almacenados.', 'La base de datos no queda abierta indiscriminadamente a Internet.'], 'rds', ['arq', 'rds']],
+    [3, 'Migra el código Python y habilita su ejecución persistente', ['La aplicación permanece operativa en EC2 al cerrar VS Code o la sesión de administración.', 'Su funcionamiento no depende de ejecutar el proyecto desde el equipo local.', 'Se conserva la arquitectura modular de la práctica anterior.'], 'remoto', ['ec2', 'arq']],
+  ]],
+  ['2', 'Publicar servicios HTTPS y reglas de negocio', [
+    [4, 'Publica la API con HTTPS y WebSocket seguro', ['Los endpoints y Swagger UI están disponibles públicamente por HTTPS.', 'El canal de monitoreo WebSocket está disponible por WSS.', 'Un cliente externo accede al servicio sin utilizar localhost.'], 'https', ['sw1', 'p1c']],
+    [5, 'Conserva la POO y los 21 Stored Procedures', ['Se evalúa la separación de clases, servicios, acceso a datos y comunicación WebSocket.', 'La API integra los 21 SP: vehículos (5), comandos (4), estado (2), historial (2), DEMO (4) y movimientos DEMO (4).', 'Se conservan los nombres y parámetros de los SP y la estructura MySQL.'], 'sp21', ['rds', 'gh2', 'int']],
+    [6, 'Ejecuta movimientos POST y consultas GET', ['Los GET consultan vehículos, comandos, último estado, historial y DEMO.', 'El POST individual valida vehículo y comando; actualiza estado y registra historial en una transacción.', 'El historial GET devuelve máximo diez movimientos individuales recientes, en orden descendente.'], 'getpost', ['sw2', 'p1p', 'p2']],
+  ]],
+  ['3', 'Demostrar WebSocket para movimientos y DEMO', [
+    [7, 'Implementa WebSocket WSS por vehículo', ['Al establecer WSS se entrega inmediatamente el último estado del vehículo guardado en RDS.', 'Tras un POST individual válido, todos los clientes WSS de ese vehículo reciben el movimiento.', 'Se permiten al menos dos conexiones simultáneas sin mezclar mensajes de vehículos distintos.'], 'wss2', ['p1c', 'p1p']],
+    [8, 'Transmite los N movimientos de una DEMO en tiempo real', ['Una DEMO válida se inicia mediante POST y transmite inicio, N movimientos y finalización.', 'Los pasos provienen de sp_obtener_movimientos_demo y respetan orden, duración y pausa.', 'Durante la DEMO se actualiza el último estado, pero no se registra historial individual.'], 'demo', ['p3d', 'p3h']],
+    [9, 'Controla simultaneidad, cancelación y futura integración ESP8266', ['No se ejecutan dos DEMO simultáneas para el mismo vehículo.', 'La cancelación detiene los pasos posteriores y se comunica por WSS.', 'Los eventos representan futuras instrucciones para ESP8266/ESP32.'], 'cancel', ['can']],
+  ]],
+  ['4', 'Asegurar, documentar y comprobar la solución', [
+    [10, 'Aplica seguridad y validaciones en ambiente público', ['Se validan entradas, asociación de comandos, permisos y respuestas de error.', 'Las credenciales no se exponen en la API, en GitHub ni en las evidencias.', 'Se protege el acceso a RDS y a las operaciones de control o eliminación.'], 'seguridad', ['can', 'rds']],
+    [11, 'Documenta endpoints y eventos públicos', ['La documentación pública describe GET/POST, parámetros, respuestas y errores.', 'La documentación relaciona los servicios con los procedimientos almacenados.', 'Los eventos WSS y sus mensajes JSON se describen en README.'], 'docs', ['sw1', 'sw2', 'gh2']],
+    [12, 'Versiona y despliega desde GitHub', ['El código del examen está disponible en un repositorio GitHub verificable.', 'Incluye dependencias, estructura POO y documentación de ejecución y WebSocket.', 'El repositorio excluye contraseñas, archivos .env y otros secretos.'], 'repo', ['gh1', 'ec2']],
+    [13, 'Comprueba el despliegue y operación remota', ['La API, Swagger UI y WebSocket funcionan desde un cliente externo mediante HTTPS/WSS.', 'Los 21 SP siguen disponibles funcionalmente mediante la API conectada a RDS.', 'La instancia EC2 permanece operativa para la demostración.'], 'remoto', ['ec2', 'int', 'nwm']],
+  ]],
+  ['5', 'Tres escenarios funcionales (Thunder Client)', [
+    [14, 'Prueba 1. POST público y notificación WSS individual', ['Dos clientes WSS conectados al mismo vehículo muestran el último estado al conectarse.', 'Un POST HTTPS de movimiento válido genera un nuevo evento en ambos clientes.', 'Se demuestra la actualización de estado y la inserción del movimiento individual en RDS.'], 'prueba1', ['p1c', 'p1p', 'p1e']],
+    [15, 'Prueba 2. GET público de historial reciente', ['El GET HTTPS devuelve como máximo los diez movimientos individuales más recientes.', 'Se verifica el orden del más reciente al más antiguo.', 'La consulta no elimina registros de RDS ni incluye movimientos DEMO.'], 'prueba2', ['p2']],
+    [16, 'Prueba 3. WSS: DEMO en tiempo real sin historial', ['Un POST inicia una DEMO registrada en RDS mientras el WSS permanece abierto.', 'Se reciben inicio, N movimientos temporizados en orden y finalización.', 'Se comprueba el último estado y que la DEMO no agregue registros al historial.'], 'demo', ['p3d', 'p3h']],
+  ]],
+  ['6', 'Evidencias mínimas', [
+    [17, 'Evidencia 1. Arquitectura AWS y migración', ['Arquitectura pública EC2–RDS y su conectividad.', 'Organización en Python, FastAPI y POO.', 'Los datos sensibles permanecen ocultos.'], null, ['arq', 'ec2', 'rds']],
+    [18, 'Evidencia 2. Swagger UI y Git/GitHub', ['URL pública HTTPS de Swagger UI.', 'Repositorio GitHub con el código y la documentación WSS.'], null, ['sw1', 'sw2', 'gh1', 'gh2']],
+    [19, 'Evidencia 3. POST + estado WSS', ['Último estado inicial, POST individual y el nuevo evento en dos conexiones WSS.', 'Persistencia del estado e historial.'], null, ['p1c', 'p1p', 'p1e']],
+    [20, 'Evidencia 4. GET historial', ['JSON del GET público con máximo diez movimientos recientes.', 'Orden de consulta y su alcance.'], null, ['p2']],
+    [21, 'Evidencia 5. WSS y DEMO', ['Inicio, N movimientos con tiempos y finalización.', 'Último estado tras la DEMO y ausencia de registros DEMO en el historial.'], null, ['p3d', 'p3h', 'can']],
+  ]],
+  ['7', 'Entrega', [
+    [22, 'Documento de evidencias en Word y PDF', ['Portada institucional, objetivo, arquitectura y explicaciones breves de las capturas.', 'Enlaces públicos verificables.'], 'pdf', []],
+    [23, 'Repositorio GitHub, enlaces públicos y PDF', ['URL verificable del repositorio GitHub y el PDF de evidencias.', 'En el PDF se identifican Swagger UI (HTTPS) y la dirección WSS.', 'La API y Amazon RDS permanecen accesibles para su evaluación.'], 'entrega', []],
+    [24, 'Conclusiones técnicas y evaluación presencial', ['Conclusiones sobre POO, los 21 SP, RDS, GET/POST, WebSocket y la diferencia entre movimientos individuales y DEMO.', 'Apuntes manuscritos del alumno sobre las 21 APIs (se presentan en papel).'], null, []],
+  ]],
+];
+
+const RUBRICA = [
+  ['Python', 'Código funcional y dependencias', 5, ['sp21', 'remoto']],
+  ['FastAPI', 'GET/POST, respuestas y validaciones', 10, ['getpost', 'seguridad']],
+  ['Programación Orientada a Objetos', 'Clases, módulos, separación de responsabilidades', 10, ['sp21', 'repo']],
+  ['Amazon RDS', 'Conexión remota segura y persistencia', 10, ['rds', 'prueba1']],
+  ['MySQL', 'Uso funcional de los 21 Stored Procedures', 10, ['sp21']],
+  ['WebSocket (WSS)', 'Último estado, evento POST, DEMO N pasos, reconexión', 25, ['wss2', 'prueba1', 'demo', 'cancel']],
+  ['Swagger UI', 'Documentación HTTP pública en HTTPS', 5, ['docs']],
+  ['Thunder Client', 'Tres escenarios públicos: GET, POST y WSS', 10, ['prueba1', 'prueba2', 'demo']],
+  ['Git / GitHub', 'Control de versiones y despliegue desde repositorio', 5, ['repo']],
+  ['Amazon EC2 y publicación', 'Servidor persistente, dominio, HTTPS/WSS', 10, ['https', 'remoto']],
+];
+
+const CONCLUSIONES = [
+  ['Programación orientada a objetos', 'Como la API ya estaba separada en configuración, acceso a datos, repositorios, servicios, ejecutor de DEMO, administrador WebSocket y routers, la migración no requirió cambiar el código de negocio: solo se movió la configuración a variables de entorno del servidor y se agregó la capa de despliegue (Caddy y tareas de inicio).'],
+  ['Los 21 SP y Amazon RDS', 'Toda la lógica de datos vive en los procedimientos y la API los ejecuta con parámetros enlazados mediante un usuario que solo tiene permiso EXECUTE; aunque la API esté en Internet, nadie puede leer ni modificar las tablas directamente.'],
+  ['GET/POST y publicación', 'Pasar de localhost a un servicio público implicó HTTPS y WSS con certificado válido, uvicorn solo en 127.0.0.1, X-API-Key en control y eliminación, y arranque automático con la instancia.'],
+  ['WebSocket', 'Cada cliente recibe al conectarse el último estado y después solo los eventos de su vehículo, sin volver a consultar: es el canal natural para enviar instrucciones a un ESP32/ESP8266.'],
+  ['Movimiento individual frente a DEMO', 'El movimiento individual es una orden explícita: actualiza el estado y queda en el historial. La DEMO es una secuencia predefinida guardada en RDS: actualiza el estado en cada paso y se transmite con sus tiempos, pero no llena el historial.'],
+];
+
+/* ============================================================
+   Utilidades HTTP y WebSocket
+   ============================================================ */
+async function req(metodo, ruta, cuerpo = null, llave = 'none') {
+  const h = {};
+  if (cuerpo !== null) h['Content-Type'] = 'application/json';
+  if (llave === 'key') h['X-API-Key'] = KEY;
+  if (llave === 'bad') h['X-API-Key'] = 'llave-incorrecta';
+  const t0 = performance.now();
+  const r = await fetch(API + ruta, {method: metodo, headers: h, body: cuerpo !== null ? JSON.stringify(cuerpo) : undefined, cache: 'no-store'});
+  const texto = await r.text(); let datos; try { datos = JSON.parse(texto); } catch { datos = texto; }
+  return {status: r.status, datos, ms: Math.round(performance.now() - t0)};
+}
+
+function abrirWS(idVehiculo = 1) {
+  const c = {eventos: [], esperas: [], cerrado: null};
+  c.ws = new WebSocket(`${WSS}/ws/vehiculos/${idVehiculo}`);
+  c.ws.onmessage = ev => {
+    let d; try { d = JSON.parse(ev.data); } catch { d = {tipo: 'texto', valor: ev.data}; }
+    d._hora = hora(); d._t = performance.now(); c.eventos.push(d);
+    c.esperas = c.esperas.filter(w => { if (w.cumple()) { w.ok(); return false; } return true; });
+  };
+  c.ws.onclose = e => { c.cerrado = e.code; c.esperas.forEach(w => w.cumple() && w.ok()); };
+  c.cuantos = tipo => c.eventos.filter(e => e.tipo === tipo).length;
+  c.esperar = (tipo, n = 1, ms = 10000) => new Promise(res => {
+    const cumple = () => c.cuantos(tipo) >= n;
+    if (cumple()) return res(true);
+    const w = {cumple, ok: () => res(true)}; c.esperas.push(w);
+    setTimeout(() => res(cumple()), ms);
+  });
+  c.cerrar = () => { try { c.ws.close(); } catch {} };
+  return c;
+}
+
+function necesitaLlave() { if (!KEY) throw new FaltaLlave(); }
+class FaltaLlave extends Error {}
+
+/* ============================================================
+   Pruebas en vivo
+   ============================================================ */
+const PRUEBAS = {
+  async https(t) {
+    t.check('La página y la API se sirven por HTTPS (no localhost)', API.startsWith('https://') && !API.includes('localhost'), API);
+    const s = await req('GET', '/salud');
+    t.check('GET /salud → 200', s.status === 200, JSON.stringify(s.datos) + ` · ${s.ms} ms`);
+    const d = await req('GET', '/docs');
+    t.check('Swagger UI /docs → 200', d.status === 200 && String(d.datos).includes('swagger'), API + '/docs');
+    const c = abrirWS(1);
+    const ok = await c.esperar('estado_inicial', 1, 8000);
+    t.check('WSS conectado y estado_inicial recibido', ok, WSS + '/ws/vehiculos/1');
+    c.cerrar();
+  },
+
+  async remoto(t) {
+    const s = await req('GET', '/salud');
+    t.check('API pública respondiendo desde EC2', s.status === 200, `${API}/salud · ${s.ms} ms`);
+    const o = await req('GET', '/openapi.json');
+    t.check('Versión desplegada', o.status === 200, `${o.datos.info?.title} ${o.datos.info?.version}`);
+    const v = await req('GET', '/vehiculos');
+    t.check('Lectura en RDS (sp_obtener_vehiculos)', v.status === 200 && Array.isArray(v.datos), `${v.datos.length} vehículo(s)`);
+    const c = abrirWS(1);
+    t.check('WSS operativo', await c.esperar('estado_inicial', 1, 8000));
+    c.cerrar();
+    t.info('Ejecución persistente: tareas de inicio IoT-API e IoT-Caddy (cuenta SYSTEM) — ver Figura 2.');
+    t.info('Este cliente es externo: no usa localhost ni VS Code.');
+  },
+
+  async rds(t) {
+    const v = await req('GET', '/vehiculos/1');
+    t.check('EC2 → RDS: GET /vehiculos/1 (sp_obtener_vehiculo)', v.status === 200, v.datos.nombre || '');
+    const e = await req('GET', '/vehiculos/1/estado');
+    t.check('Último estado leído de RDS (sp_obtener_estado)', e.status === 200, e.datos ? `${e.datos.comando} · ${e.datos.fecha_actualizacion}` : 'null');
+    const h = await req('GET', '/vehiculos/1/historial');
+    t.check('Historial persistido (sp_obtener_historial)', h.status === 200 && Array.isArray(h.datos), `${h.datos.length} registros`);
+    t.info('Usuario de MySQL api_iot: solo EXECUTE sobre vehiculo_iot; ve los 21 SP y 0 tablas (Figura 3).');
+    t.info('Credenciales en .env solo en la EC2; uvicorn escucha en 127.0.0.1.');
+  },
+
+  async getpost(t) {
+    const v = await req('GET', '/vehiculos');  t.check('GET /vehiculos', v.status === 200, `${v.datos.length} vehículo(s)`);
+    const c = await req('GET', '/vehiculos/1/comandos'); t.check('GET /vehiculos/1/comandos', c.status === 200, c.datos.map(x => x.nombre).join(', '));
+    const e = await req('GET', '/vehiculos/1/estado'); t.check('GET /vehiculos/1/estado', e.status === 200, e.datos?.comando);
+    const h = await req('GET', '/vehiculos/1/historial'); t.check('GET /vehiculos/1/historial (≤10)', h.status === 200 && h.datos.length <= 10, `${h.datos.length} registros`);
+    const d = await req('GET', '/vehiculos/1/demos'); t.check('GET /vehiculos/1/demos', d.status === 200, d.datos.map(x => x.nombre).join(', '));
+    const m = await req('GET', '/vehiculos/1/demos/1/movimientos'); t.check('GET /vehiculos/1/demos/1/movimientos', m.status === 200, `${m.datos.length} movimientos`);
+    necesitaLlave();
+    const p = await req('POST', '/movimientos', {id_vehiculo: 1, id_comando: 9, origen: 'APP-EXAMEN'}, 'key');
+    t.check('POST /movimientos (DETENER) → 201', p.status === 201, JSON.stringify(p.datos));
+    const e2 = await req('GET', '/vehiculos/1/estado');
+    const h2 = await req('GET', '/vehiculos/1/historial');
+    t.check('Transacción: estado = DETENER', e2.datos?.comando === 'DETENER');
+    t.check('Transacción: primer registro del historial = DETENER (APP-EXAMEN)', h2.datos[0]?.comando === 'DETENER' && h2.datos[0]?.origen === 'APP-EXAMEN', `id_historial ${h2.datos[0]?.id_historial}`);
+  },
+
+  async wss2(t) {
+    necesitaLlave();
+    const tmp = await req('POST', '/vehiculos', {nombre: 'Vehiculo PRUEBA APP WSS', modelo: 'temporal', microcontrolador: 'ESP32'});
+    const otro = tmp.datos.id;
+    t.info(`Vehículo temporal ${otro} para comprobar que no se mezclan mensajes.`);
+    const A = abrirWS(1), B = abrirWS(1), C = abrirWS(otro);
+    try {
+      await Promise.all([A.esperar('estado_inicial'), B.esperar('estado_inicial'), C.esperar('estado_inicial')]);
+      t.check('Cliente A: estado_inicial', A.cuantos('estado_inicial') === 1, A.eventos[0]?.estado?.comando);
+      t.check('Cliente B: estado_inicial', B.cuantos('estado_inicial') === 1, B.eventos[0]?.estado?.comando);
+      const p = await req('POST', '/movimientos', {id_vehiculo: 1, id_comando: 1, origen: 'APP-EXAMEN'}, 'key');
+      t.check('POST /movimientos AVANZAR → 201', p.status === 201);
+      const [a, b] = await Promise.all([A.esperar('movimiento'), B.esperar('movimiento')]);
+      const ea = A.eventos.find(e => e.tipo === 'movimiento'), eb = B.eventos.find(e => e.tipo === 'movimiento');
+      t.check('Cliente A recibió movimiento', a, ea && `${ea.comando} · ${ea._hora}`);
+      t.check('Cliente B recibió movimiento', b, eb && `${eb.comando} · ${eb._hora}`);
+      await dormir(1200);
+      t.check(`Cliente del vehículo ${otro} NO recibió el evento del vehículo 1`, C.cuantos('movimiento') === 0);
+      A.cerrar(); const R = abrirWS(1);
+      t.check('Reconexión: vuelve a recibir estado_inicial (AVANZAR)', await R.esperar('estado_inicial') && R.eventos[0]?.estado?.comando === 'AVANZAR');
+      R.cerrar();
+    } finally {
+      A.cerrar(); B.cerrar(); C.cerrar();
+      const del = await req('POST', `/vehiculos/${otro}/eliminar`, null, 'key');
+      t.info(`Vehículo temporal ${otro} eliminado (${del.status}).`);
+    }
+  },
+
+  async prueba1(t) {
+    necesitaLlave();
+    const A = abrirWS(1), B = abrirWS(1);
+    try {
+      await Promise.all([A.esperar('estado_inicial'), B.esperar('estado_inicial')]);
+      t.ev(`A ${A.eventos[0]._hora} estado_inicial → ${A.eventos[0].estado?.comando}`);
+      t.ev(`B ${B.eventos[0]._hora} estado_inicial → ${B.eventos[0].estado?.comando}`);
+      t.check('Dos clientes WSS con el último estado', A.cuantos('estado_inicial') && B.cuantos('estado_inicial'));
+      const p = await req('POST', '/movimientos', {id_vehiculo: 1, id_comando: 2, origen: 'APP-EXAMEN'}, 'key');
+      t.check('POST https://…/movimientos RETROCEDER → 201', p.status === 201, `${p.ms} ms`);
+      await Promise.all([A.esperar('movimiento'), B.esperar('movimiento')]);
+      const ea = A.eventos.find(e => e.tipo === 'movimiento'), eb = B.eventos.find(e => e.tipo === 'movimiento');
+      t.ev(`A ${ea?._hora} movimiento → ${ea?.comando}`); t.ev(`B ${eb?._hora} movimiento → ${eb?.comando}`);
+      t.check('Ambos clientes recibieron el mismo evento', ea && eb && ea.timestamp === eb.timestamp, ea?.timestamp);
+      const e = await req('GET', '/vehiculos/1/estado');
+      t.check('Estado actualizado en RDS = RETROCEDER', e.datos?.comando === 'RETROCEDER', e.datos?.fecha_actualizacion);
+      const h = await req('GET', '/vehiculos/1/historial');
+      t.check('Movimiento insertado en historial', h.datos[0]?.comando === 'RETROCEDER' && h.datos[0]?.origen === 'APP-EXAMEN', `id_historial ${h.datos[0]?.id_historial}`);
+    } finally { A.cerrar(); B.cerrar(); }
+  },
+
+  async prueba2(t) {
+    const h = await req('GET', '/vehiculos/1/historial');
+    const ids = h.datos.map(x => x.id_historial);
+    t.check('GET https://…/vehiculos/1/historial → 200', h.status === 200, `${h.ms} ms`);
+    t.check('Máximo 10 movimientos', h.datos.length <= 10, `${h.datos.length}`);
+    t.check('Del más reciente al más antiguo', ids.every((v, i) => i === 0 || ids[i - 1] > v), ids.join(', '));
+    t.check('Sin movimientos DEMO', h.datos.every(x => String(x.origen).toUpperCase() !== 'DEMO'), [...new Set(h.datos.map(x => x.origen))].join(', '));
+    const h2 = await req('GET', '/vehiculos/1/historial');
+    t.check('La consulta no elimina registros (dos GET iguales)', JSON.stringify(h2.datos.map(x => x.id_historial)) === JSON.stringify(ids));
+    h.datos.forEach(x => t.ev(`#${x.id_historial} ${x.comando} · ${x.origen} · ${x.fecha_hora}`));
+  },
+
+  async demo(t) {
+    necesitaLlave();
+    const antes = (await req('GET', '/vehiculos/1/historial')).datos.map(x => x.id_historial);
+    const pasos = (await req('GET', '/vehiculos/1/demos/1/movimientos')).datos;
+    t.info(`DEMO 1 en RDS: ${pasos.length} movimientos (sp_obtener_movimientos_demo).`);
+    const c = abrirWS(1);
+    try {
+      await c.esperar('estado_inicial');
+      const r = await req('POST', '/vehiculos/1/demos/1/iniciar', null, 'key');
+      t.check('POST …/demos/1/iniciar → 202', r.status === 202, JSON.stringify(r.datos));
+      if (r.status !== 202) return;
+      const fin = await new Promise(res => {
+        const tick = setInterval(() => {
+          const f = c.eventos.find(e => ['demo_fin', 'demo_cancelada', 'demo_error'].includes(e.tipo));
+          if (f) { clearInterval(tick); res(f); }
+        }, 100);
+        setTimeout(() => { clearInterval(tick); res(null); }, 45000);
+      });
+      const movs = c.eventos.filter(e => e.tipo === 'demo_movimiento');
+      const ini = c.eventos.find(e => e.tipo === 'demo_inicio');
+      if (ini) t.ev(`${ini._hora} demo_inicio (N = ${ini.total_movimientos})`);
+      movs.forEach((m, i) => {
+        const dt = i ? Math.round(m._t - movs[i - 1]._t) : 0;
+        const esperado = i ? movs[i - 1].duracion_ms + movs[i - 1].pausa_ms : 0;
+        t.ev(`${m._hora} #${m.orden} ${m.comando} · ${m.duracion_ms}+${m.pausa_ms} ms${i ? ` · Δ real ${dt} ms (esperado ${esperado})` : ''}`);
+      });
+      if (fin) t.ev(`${fin._hora} ${fin.tipo}`);
+      t.check('Se recibieron inicio, N movimientos y fin', ini && fin?.tipo === 'demo_fin' && movs.length === pasos.length, `${movs.length}/${pasos.length}`);
+      t.check('Orden respetado', movs.every((m, i) => m.orden === i + 1));
+      const tiempos = movs.slice(1).every((m, i) => Math.abs((m._t - movs[i]._t) - (movs[i].duracion_ms + movs[i].pausa_ms)) < 600);
+      t.check('Tiempos respetan duracion_ms + pausa_ms (±600 ms de red)', tiempos);
+      const e = await req('GET', '/vehiculos/1/estado');
+      t.check('Último estado = último paso de la DEMO', e.datos?.comando === movs.at(-1)?.comando, e.datos?.comando);
+      const despues = (await req('GET', '/vehiculos/1/historial')).datos.map(x => x.id_historial);
+      t.check('La DEMO NO agregó registros al historial', JSON.stringify(antes) === JSON.stringify(despues), `antes ${antes.slice(0, 3).join(',')}… = después ${despues.slice(0, 3).join(',')}…`);
+    } finally { c.cerrar(); }
+  },
+
+  async cancel(t) {
+    necesitaLlave();
+    const c = abrirWS(1);
+    try {
+      await c.esperar('estado_inicial');
+      const r1 = await req('POST', '/vehiculos/1/demos/1/iniciar', null, 'key');
+      t.check('Iniciar DEMO → 202', r1.status === 202);
+      await c.esperar('demo_movimiento', 1);
+      const r2 = await req('POST', '/vehiculos/1/demos/1/iniciar', null, 'key');
+      t.check('Segunda DEMO simultánea → 409', r2.status === 409, r2.datos.detail);
+      const r3 = await req('POST', '/movimientos', {id_vehiculo: 1, id_comando: 1, origen: 'APP-EXAMEN'}, 'key');
+      t.check('Movimiento individual durante la DEMO → 409', r3.status === 409, r3.datos.detail);
+      const r4 = await req('POST', '/vehiculos/1/demos/cancelar', null, 'key');
+      t.check('POST …/demos/cancelar → 202', r4.status === 202, r4.datos.estado);
+      const ok = await c.esperar('demo_cancelada', 1, 6000);
+      const ev = c.eventos.find(e => e.tipo === 'demo_cancelada');
+      t.check('Evento demo_cancelada por WSS', ok, ev && `${ev._hora} · estado_detenido ${ev.estado_detenido}`);
+      await dormir(2500);
+      t.check('Ya no llegaron pasos después de cancelar', !c.eventos.some(e => e.tipo === 'demo_movimiento' && e._t > ev._t) && !c.cuantos('demo_fin'));
+      t.info('Cada evento movimiento / demo_movimiento es la futura instrucción para el ESP32/ESP8266 (comando, código y duración).');
+    } finally { c.cerrar(); }
+  },
+
+  async seguridad(t) {
+    const a = await req('POST', '/movimientos', {id_vehiculo: 1, id_comando: 1}, 'none');
+    t.check('POST sin X-API-Key → 401', a.status === 401, a.datos.detail);
+    const b = await req('POST', '/vehiculos/1/demos/cancelar', null, 'bad');
+    t.check('Llave incorrecta → 403', b.status === 403, b.datos.detail);
+    const c = await req('GET', '/vehiculos/999999');
+    t.check('Vehículo inexistente → 404', c.status === 404, c.datos.detail);
+    const d = await req('POST', '/vehiculos', {modelo: 'sin nombre'});
+    t.check('Entrada inválida (falta nombre) → 422', d.status === 422);
+    if (KEY) {
+      const e = await req('POST', '/movimientos', {id_vehiculo: 1, id_comando: 99999}, 'key');
+      t.check('Comando que no pertenece al vehículo → 404', e.status === 404, e.datos.detail);
+      const f = await req('POST', '/movimientos', {id_vehiculo: 1, id_comando: 1, origen: 'mal<script>'}, 'key');
+      t.check('Origen con caracteres no permitidos → 422', f.status === 422);
+    }
+    const w = abrirWS(999999);
+    await w.esperar('error', 1, 6000); await dormir(400);
+    t.check('WSS de vehículo inexistente → evento error y cierre 4404', w.cuantos('error') === 1 && w.cerrado === 4404, `código ${w.cerrado}`);
+    const o = await req('GET', '/openapi.json');
+    t.check('La API no expone credenciales (openapi sin DB_PASSWORD / API_KEY)', !/DB_PASSWORD|API_KEY=|DB_HOST/i.test(JSON.stringify(o.datos)));
+  },
+
+  async docs(t) {
+    const o = await req('GET', '/openapi.json');
+    const rutas = Object.entries(o.datos.paths);
+    const ops = rutas.reduce((n, [, v]) => n + Object.keys(v).length, 0);
+    t.check('OpenAPI público', o.status === 200, `${o.datos.info.title} ${o.datos.info.version}`);
+    t.check(`${ops} operaciones documentadas en ${rutas.length} rutas`, ops >= 23);
+    t.check('Etiquetas', (o.datos.tags || []).length >= 5, (o.datos.tags || []).map(x => x.name).join(' · '));
+    const conSP = rutas.flatMap(([, v]) => Object.values(v)).filter(op => /sp_/.test((op.description || '') + (op.summary || ''))).length;
+    t.check('Operaciones relacionadas con su SP', conSP > 0, `${conSP} operaciones mencionan su sp_…`);
+    const conErr = rutas.flatMap(([, v]) => Object.values(v)).filter(op => Object.keys(op.responses || {}).some(c => c >= '400')).length;
+    t.check('Respuestas de error documentadas', conErr > 0, `${conErr} operaciones con 4xx`);
+    try {
+      const rd = await fetch(`https://raw.githubusercontent.com/${REPO}/main/README.md`, {cache: 'no-store'}).then(r => r.text());
+      t.check('README describe los eventos WSS', ['estado_inicial', 'movimiento', 'demo_inicio', 'demo_movimiento', 'demo_fin', 'demo_cancelada'].every(x => rd.includes(x)));
+    } catch { t.info('No se pudo leer el README desde GitHub (red).'); }
+  },
+
+  async repo(t) {
+    const gh = p => fetch(`https://api.github.com/repos/${REPO}${p}`, {cache: 'no-store'});
+    const r = await gh(''); const info = await r.json();
+    t.check('Repositorio público en GitHub', r.status === 200, info.html_url);
+    const c = await (await gh('/commits?per_page=1')).json();
+    t.check('Último commit', Array.isArray(c), c[0] && `${c[0].sha.slice(0, 7)} · ${c[0].commit.message.split('\n')[0]}`);
+    const archivo = async p => (await gh('/contents/' + p)).status;
+    t.check('requirements.txt (dependencias)', await archivo('requirements.txt') === 200);
+    t.check('app/ con módulos POO (routers, services, repositories, websocket)', await archivo('app/services') === 200 && await archivo('app/repositories') === 200 && await archivo('app/websocket') === 200);
+    t.check('deploy/ (Caddy y tareas de inicio)', await archivo('deploy') === 200);
+    t.check('.env.example sin secretos', await archivo('.env.example') === 200);
+    t.check('.env NO está en el repositorio', await archivo('.env') === 404);
+    t.info('En la EC2: git pull + deploy\\actualizar.ps1 (commit desplegado en la Figura 2).');
+  },
+
+  async sp21(t) {
+    necesitaLlave();
+    const sp = (n, ok, det) => t.check(n, ok, det);
+    let v = null;
+    try {
+      let r = await req('POST', '/vehiculos', {nombre: 'Vehiculo PRUEBA APP', modelo: 'temporal', microcontrolador: 'ESP32'});
+      v = r.datos.id; sp('1. sp_crear_vehiculo', r.status === 201, `id ${v}`);
+      r = await req('GET', '/vehiculos'); sp('2. sp_obtener_vehiculos', r.datos.some(x => x.id_vehiculo === v));
+      r = await req('GET', `/vehiculos/${v}`); sp('3. sp_obtener_vehiculo', r.status === 200);
+      r = await req('POST', `/vehiculos/${v}/actualizar`, {nombre: 'Vehiculo PRUEBA APP 2', microcontrolador: 'ESP8266', activo: true}); sp('4. sp_actualizar_vehiculo', r.status === 200);
+      const ids = {};
+      for (const [n, cod] of [['AVANZAR', 1], ['DETENER', 9], ['TEMPORAL', 50]]) ids[n] = (await req('POST', `/vehiculos/${v}/comandos`, {nombre: n, codigo: cod})).datos.id;
+      sp('5. sp_crear_comando', Object.values(ids).every(Boolean), `3 comandos`);
+      r = await req('GET', `/vehiculos/${v}/comandos`); sp('6. sp_obtener_comandos_vehiculo', r.datos.length === 3);
+      r = await req('POST', `/vehiculos/${v}/comandos/${ids.TEMPORAL}/actualizar`, {nombre: 'TEMPORAL', codigo: 50, activo: false}); sp('7. sp_actualizar_comando', r.status === 200);
+      r = await req('GET', `/vehiculos/${v}/estado`); sp('8. sp_obtener_estado (sin estado → null)', r.status === 200 && r.datos === null);
+      r = await req('POST', '/movimientos', {id_vehiculo: v, id_comando: ids.AVANZAR, origen: 'APP-EXAMEN'}, 'key');
+      sp('9. sp_actualizar_estado + 10. sp_registrar_historial (una transacción)', r.status === 201);
+      r = await req('GET', `/vehiculos/${v}/historial`); sp('11. sp_obtener_historial', r.datos.length === 1 && r.datos[0].comando === 'AVANZAR');
+      r = await req('POST', `/vehiculos/${v}/demos`, {nombre: 'Demo app'}); const d = r.datos.id; sp('12. sp_crear_demo', r.status === 201, `id ${d}`);
+      const m1 = await req('POST', `/vehiculos/${v}/demos/${d}/movimientos`, {id_comando: ids.AVANZAR, orden: 1, duracion_ms: 300, pausa_ms: 100});
+      const m2 = await req('POST', `/vehiculos/${v}/demos/${d}/movimientos`, {id_comando: ids.DETENER, orden: 2, duracion_ms: 100, pausa_ms: 0});
+      sp('13. sp_agregar_movimiento_demo', m1.status === 201 && m2.status === 201);
+      r = await req('GET', `/vehiculos/${v}/demos/${d}/movimientos`); const movs = r.datos;
+      sp('14. sp_obtener_movimientos_demo', movs.map(x => x.orden).join() === '1,2');
+      r = await req('POST', `/vehiculos/${v}/demos/${d}/movimientos/${movs[0].id_demo_movimiento}/actualizar`, {id_comando: ids.AVANZAR, orden: 1, duracion_ms: 250, pausa_ms: 50});
+      sp('15. sp_actualizar_movimiento_demo', r.status === 200);
+      r = await req('POST', `/vehiculos/${v}/demos/${d}/actualizar`, {nombre: 'Demo app (editada)', activo: true}); sp('16. sp_actualizar_demo', r.status === 200);
+      r = await req('GET', `/vehiculos/${v}/demos`); sp('17. sp_obtener_demos', r.datos[0]?.nombre === 'Demo app (editada)');
+      r = await req('POST', `/vehiculos/${v}/demos/${d}/movimientos/${movs[1].id_demo_movimiento}/eliminar`, null, 'key'); sp('18. sp_eliminar_movimiento_demo', r.status === 200);
+      r = await req('POST', `/vehiculos/${v}/demos/${d}/eliminar`, null, 'key'); sp('19. sp_eliminar_demo', r.status === 200);
+      r = await req('POST', `/vehiculos/${v}/comandos/${ids.TEMPORAL}/eliminar`, null, 'key'); sp('20. sp_eliminar_comando', r.status === 200);
+      r = await req('POST', `/vehiculos/${v}/eliminar`, null, 'key'); sp('21. sp_eliminar_vehiculo', r.status === 200);
+      r = await req('GET', `/vehiculos/${v}`); t.check('Vehículo temporal eliminado (404)', r.status === 404); v = null;
+      t.info('POO: routers → servicios → repositorios (solo SP) → Database; EjecutorDemo y ConnectionManager.');
+    } finally {
+      if (v) { await req('POST', `/vehiculos/${v}/eliminar`, null, 'key'); t.info(`Limpieza: vehículo ${v} eliminado.`); }
+    }
+  },
+
+  async pdf(t) {
+    const r = await fetch('Practica-2.6-Reporte.pdf', {method: 'HEAD', cache: 'no-store'});
+    t.check('PDF de evidencias publicado', r.ok, `${Math.round((r.headers.get('content-length') || 0) / 1024)} KB`);
+    t.info('Word exportado a PDF: portada institucional, objetivo, arquitectura, 17 figuras explicadas y enlaces públicos.');
+  },
+
+  async entrega(t) {
+    t.info('Repositorio: https://github.com/' + REPO);
+    t.info('Swagger UI (HTTPS): ' + API + '/docs');
+    t.info('WSS: ' + WSS + '/ws/vehiculos/1');
+    const s = await req('GET', '/salud');
+    t.check('API y RDS accesibles para la evaluación', s.status === 200 && (await req('GET', '/vehiculos/1')).status === 200);
+    const r = await fetch('Practica-2.6-Reporte.pdf', {method: 'HEAD'});
+    t.check('PDF disponible', r.ok);
+  },
+};
+
+/* ============================================================
+   Ejecución de pruebas (una a la vez)
+   ============================================================ */
+const ESTADO = {};          // nombrePrueba -> 'ok' | 'mal' | 'llave' | 'run'
+let cola = Promise.resolve();
+
+function nuevoRegistro(caja) {
+  caja.innerHTML = ''; caja.classList.add('vis');
+  let fallas = 0;
+  const linea = (cls, icono, txt, det) => {
+    const d = document.createElement('div'); d.className = 'l';
+    d.innerHTML = `<span class="${cls}">${icono}</span><span><span class="${cls === 'ok' || cls === 'mal' ? '' : cls}">${esc(txt)}</span>${det !== undefined && det !== null && det !== '' ? ` <span class="det">· ${esc(det)}</span>` : ''}</span>`;
+    caja.appendChild(d); caja.scrollTop = caja.scrollHeight;
+  };
+  return {
+    check(txt, ok, det) { if (!ok) fallas++; linea(ok ? 'ok' : 'mal', ok ? '✔' : '✘', txt, det); },
+    info(txt) { linea('info', 'ℹ', txt); },
+    ev(txt) { linea('ev', '↯', txt); },
+    get fallas() { return fallas; },
+  };
+}
+
+function correr(nombre, caja) {
+  cola = cola.then(async () => {
+    marcar(nombre, 'run');
+    const t = nuevoRegistro(caja);
+    t.info(`${hora()} · ${API}`);
+    let res;
+    try {
+      await PRUEBAS[nombre](t);
+      res = t.fallas ? 'mal' : 'ok';
+      t.info(t.fallas ? `${t.fallas} verificación(es) fallaron` : 'Todo correcto');
+    } catch (e) {
+      if (e instanceof FaltaLlave) { res = 'llave'; t.info('Esta prueba envía POST de control: configura la X-API-Key (botón 🔑 arriba).'); }
+      else { res = 'mal'; t.check('Error inesperado', false, e.message); }
+    }
+    marcar(nombre, res);
+  });
+  return cola;
+}
+
+function marcar(nombre, est) {
+  ESTADO[nombre] = est;
+  document.querySelectorAll(`[data-prueba="${nombre}"] .chip-estado`).forEach(ch => {
+    ch.className = 'chip chip-estado ' + ({ok: 'ok', mal: 'mal', run: 'run', llave: 'llave'}[est] || '');
+    ch.textContent = ({ok: '✔ verificado', mal: '✘ revisar', run: '… probando', llave: '🔑 requiere llave'}[est] || 'en vivo');
+  });
+  actualizarResumen();
+}
+
+function actualizarResumen() {
+  let ok = 0, total = 0;
+  SECCIONES.forEach(([, , items]) => items.forEach(([n, , , prueba, figs]) => {
+    total++;
+    if (prueba ? ESTADO[prueba] === 'ok' : true) ok++;   // los criterios documentales se cubren con su evidencia
+  }));
+  const verif = SECCIONES.flatMap(s => s[2]).filter(i => i[3] && ESTADO[i[3]] === 'ok').length;
+  const conPrueba = SECCIONES.flatMap(s => s[2]).filter(i => i[3]).length;
+  $('#anilloTxt').textContent = `${verif}/${conPrueba}`;
+  $('#arco').style.strokeDashoffset = 119.4 * (1 - verif / conPrueba);
+  document.querySelectorAll('.seccion').forEach(s => {
+    const items = SECCIONES.find(x => x[0] === s.dataset.sec)[2];
+    const conP = items.filter(i => i[3]); const okP = conP.filter(i => ESTADO[i[3]] === 'ok').length;
+    s.querySelector('.cnt').textContent = conP.length ? `${okP}/${conP.length} en vivo` : `${items.length} con evidencia`;
+  });
+  // Rúbrica
+  let pts = 0;
+  RUBRICA.forEach(([tec, , p, pruebas], i) => {
+    const cumple = pruebas.every(x => ESTADO[x] === 'ok');
+    if (cumple) pts += p;
+    const fila = document.getElementById('rub' + i);
+    if (fila) fila.querySelector('.st').innerHTML = cumple ? '<span class="chip ok">✔</span>' : pruebas.some(x => ESTADO[x] === 'mal') ? '<span class="chip mal">✘</span>' : '<span class="chip">—</span>';
+  });
+  const tot = document.getElementById('rubTotal'); if (tot) tot.textContent = `${pts} / 100`;
+  $('#barraRub').style.width = pts + '%';
+}
+
+/* ============================================================
+   Render de criterios, rúbrica, galería y enlaces
+   ============================================================ */
+function botonFigura(clave) {
+  const [arch, n] = FIG[clave];
+  return `<button class="boton sec chico" data-fig="${clave}">🖼 Fig. ${n}</button>`;
+}
+
+function renderCriterios() {
+  const cont = $('#listaCriterios');
+  cont.innerHTML = SECCIONES.map(([num, titulo, items], si) => `
+    <details class="seccion" data-sec="${num}" ${si === 0 ? 'open' : ''}>
+      <summary><span class="num">${num}</span><span class="t">${esc(titulo)}</span><span class="cnt"></span></summary>
+      ${items.map(([n, tit, bullets, prueba, figs]) => `
+        <div class="crit" ${prueba ? `data-prueba="${prueba}"` : ''}>
+          <div class="top"><span class="n">${n}</span><h3>${esc(tit)}</h3>
+            ${prueba ? `<span class="chip chip-estado">en vivo</span>` : figs.length ? '<span class="chip ev">evidencia</span>' : '<span class="chip">entrega</span>'}</div>
+          <ul>${bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul>
+          <div class="fila">
+            ${prueba ? `<button class="boton chico" data-correr="${prueba}">▶ Probar en vivo</button>` : ''}
+            ${figs.map(botonFigura).join('')}
+            ${n === 22 || n === 23 ? '<a class="boton sec chico" href="Practica-2.6-Reporte.pdf" target="_blank" rel="noopener">📄 PDF</a>' : ''}
+            ${n === 23 ? `<a class="boton sec chico" href="https://github.com/${REPO}" target="_blank" rel="noopener">GitHub</a>` : ''}
+            ${n === 24 ? '<button class="boton sec chico" data-ir="enlaces">Ver conclusiones</button>' : ''}
+          </div>
+          <div class="res"></div>
+        </div>`).join('')}
+    </details>`).join('');
+
+  cont.addEventListener('click', e => {
+    const b = e.target.closest('[data-correr]');
+    if (b) { correr(b.dataset.correr, b.closest('.crit').querySelector('.res')); return; }
+    const f = e.target.closest('[data-fig]'); if (f) abrirFigura(f.dataset.fig);
+    const ir = e.target.closest('[data-ir]'); if (ir) cambiarVista(ir.dataset.ir);
+  });
+
+  $('#tablaRubrica').innerHTML = `<tr><th>Tecnología</th><th>Criterio verificable</th><th></th><th style="text-align:right">Pts</th></tr>` +
+    RUBRICA.map(([tec, crit, p], i) => `<tr id="rub${i}"><td><b>${esc(tec)}</b></td><td style="color:#c9ced8">${esc(crit)}</td><td class="st"><span class="chip">—</span></td><td class="p">${p}</td></tr>`).join('') +
+    `<tr class="total"><td colspan="3">Verificado en vivo</td><td class="p" id="rubTotal">0 / 100</td></tr>`;
+}
+
+async function ejecutarTodo() {
+  const btn = $('#btnTodo'); btn.disabled = true;
+  const orden = ['https', 'remoto', 'rds', 'docs', 'repo', 'getpost', 'seguridad', 'prueba2', 'prueba1', 'wss2', 'demo', 'cancel', 'sp21', 'pdf', 'entrega'];
+  document.querySelectorAll('.seccion').forEach(s => s.open = true);
+  for (const [i, p] of orden.entries()) {
+    $('#txtTodo').textContent = `Ejecutando ${i + 1}/${orden.length}: ${p}…`;
+    const caja = document.querySelector(`[data-prueba="${p}"] .res`);
+    await correr(p, caja);
+    document.querySelectorAll(`[data-prueba="${p}"] .res`).forEach(o => { if (o !== caja) { o.innerHTML = caja.innerHTML; o.classList.add('vis'); } });
+  }
+  const ok = orden.filter(p => ESTADO[p] === 'ok').length;
+  $('#txtTodo').textContent = `Listo: ${ok}/${orden.length} pruebas en vivo correctas · ${hora()}`;
+  btn.disabled = false;
+}
+
+function renderGaleria() {
+  $('#galeria').innerHTML = Object.entries(FIG).map(([k, [arch, n, cap]]) =>
+    `<button class="fig" data-fig="${k}"><img loading="lazy" src="evidencias/${arch}.webp" alt=""><span><b>Figura ${n}.</b> ${esc(cap)}</span></button>`).join('');
+  $('#galeria').addEventListener('click', e => { const f = e.target.closest('[data-fig]'); if (f) abrirFigura(f.dataset.fig); });
+}
+
+function abrirFigura(k) {
+  const [arch, n, cap] = FIG[k];
+  $('#visorImg').src = `evidencias/${arch}.webp`;
+  $('#visorTit').textContent = `Figura ${n}`; $('#visorTxt').textContent = cap;
+  $('#visor').classList.remove('zoom'); $('#visor').classList.add('vis');
+}
+
+function renderEnlaces() {
+  const L = [
+    ['📘', 'Swagger UI (HTTPS)', API + '/docs', API + '/docs'],
+    ['⚡', 'WebSocket seguro (WSS)', WSS + '/ws/vehiculos/1', null],
+    ['🌐', 'API pública', API, API + '/salud'],
+    ['🎮', 'Página de control', API + '/control/', API + '/control/'],
+    ['🐙', 'Repositorio GitHub', 'github.com/' + REPO, 'https://github.com/' + REPO],
+    ['📄', 'Reporte PDF', 'Practica-2.6-Reporte.pdf', 'Practica-2.6-Reporte.pdf'],
+    ['🧪', 'Colección de Postman', 'Practica-2.6-API-IoT.postman_collection.json', 'Practica-2.6-API-IoT.postman_collection.json'],
+  ];
+  $('#listaEnlaces').innerHTML = L.map(([ic, t, sub, url]) => `<div class="card">
+      ${url ? `<a class="enlace" href="${url}" target="_blank" rel="noopener">` : `<a class="enlace" href="#" data-copiar="${sub}">`}
+      <span class="ic">${ic}</span><div><b>${t}</b><small>${esc(sub)}</small></div><span>${url ? '›' : '⧉'}</span></a></div>`).join('');
+  $('#listaEnlaces').addEventListener('click', e => {
+    const c = e.target.closest('[data-copiar]'); if (!c) return;
+    e.preventDefault(); navigator.clipboard?.writeText(c.dataset.copiar).then(() => toast('URL WSS copiada'));
+  });
+  $('#conclusiones').innerHTML = CONCLUSIONES.map(([t, p]) => `<p style="margin:0 0 10px"><b style="color:var(--txt)">${t}.</b> ${p}</p>`).join('');
+}
+
+/* ============================================================
+   Vista "En vivo": dos clientes WSS permanentes
+   ============================================================ */
+const vivo = {A: null, B: null, total: 0, hechos: 0};
+function logEvento(cli, d) {
+  const box = $('#log' + cli);
+  const div = document.createElement('div');
+  let det = '';
+  if (d.tipo === 'estado_inicial') det = d.estado ? `${d.estado.comando}` : 'sin estado';
+  else if (d.tipo === 'movimiento') det = `${d.comando} · ${d.origen}`;
+  else if (d.tipo === 'demo_movimiento') det = `#${d.orden}/${d.total_movimientos} ${d.comando} ${d.duracion_ms}+${d.pausa_ms}ms`;
+  else if (d.tipo === 'demo_inicio') det = `DEMO ${d.id_demo} · N=${d.total_movimientos}`;
+  else if (d.tipo === 'conexion') det = `conectado=${d.conectado}`;
+  else if (d.detalle) det = d.detalle;
+  div.innerHTML = `<span class="t">${hora()}</span> <b class="tipo-${d.tipo}">${d.tipo}</b> ${esc(det)}`;
+  box.appendChild(div); box.scrollTop = box.scrollHeight;
+  while (box.children.length > 80) box.firstChild.remove();
+}
+
+function conectarVivo(cli) {
+  if (vivo[cli]) try { vivo[cli].close(); } catch {}
+  const ws = new WebSocket(`${WSS}/ws/vehiculos/1`);
+  vivo[cli] = ws;
+  ws.onopen = () => { $('#pto' + cli).className = 'punto ok'; if (cli === 'A') { $('#ptoWs').className = 'punto ok'; $('#txtWs').textContent = 'conectado'; } };
+  ws.onclose = () => { $('#pto' + cli).className = 'punto mal'; if (cli === 'A') { $('#ptoWs').className = 'punto mal'; $('#txtWs').textContent = 'desconectado'; } };
+  ws.onmessage = ev => {
+    let d; try { d = JSON.parse(ev.data); } catch { return; }
+    logEvento(cli, d);
+    if (cli !== 'A') return;
+    if (d.tipo === 'estado_inicial' && d.estado) pintarEstado(d.estado.comando, `estado_inicial · ${d.estado.fecha_actualizacion} UTC`);
+    if (d.tipo === 'movimiento') { pintarEstado(d.comando, `movimiento · origen ${d.origen} · ${hora()}`); cargarHistorial(); }
+    if (d.tipo === 'demo_inicio') { vivo.total = d.total_movimientos; vivo.hechos = 0; $('#demoBarra').style.width = '0%'; $('#demoTxt').textContent = `DEMO ${d.id_demo} iniciada · ${d.total_movimientos} movimientos`; }
+    if (d.tipo === 'demo_movimiento') { vivo.hechos = d.orden; $('#demoBarra').style.width = (100 * d.orden / d.total_movimientos) + '%';
+      $('#demoTxt').textContent = `Paso ${d.orden}/${d.total_movimientos}: ${d.comando} (${d.duracion_ms} ms + pausa ${d.pausa_ms} ms)`; pintarEstado(d.comando, `demo_movimiento #${d.orden} · sin historial`); }
+    if (d.tipo === 'demo_fin') { $('#demoTxt').textContent = `DEMO terminada · ${d.total_movimientos} movimientos · historial sin cambios`; cargarHistorial(); }
+    if (d.tipo === 'demo_cancelada') { $('#demoTxt').textContent = 'DEMO cancelada · ya no se envían más pasos'; }
+  };
+}
+
+function pintarEstado(cmd, meta) { $('#vivoCmd').textContent = cmd; $('#vivoMeta').textContent = meta; }
+
+async function cargarHistorial() {
+  try {
+    const h = await req('GET', '/vehiculos/1/historial');
+    $('#vivoHist').innerHTML = h.datos.length ? h.datos.map(x => `<div><span>#${x.id_historial} <b>${esc(x.comando)}</b> · ${esc(x.origen)}</span><span>${esc(x.fecha_hora.slice(11))}</span></div>`).join('') : '<span class="nota">Sin movimientos.</span>';
+  } catch { $('#vivoHist').innerHTML = '<span class="nota">No se pudo consultar.</span>'; }
+}
+
+async function renderPad() {
+  try {
+    const c = await req('GET', '/vehiculos/1/comandos');
+    $('#pad').innerHTML = c.datos.filter(x => x.activo !== false).map(x => `<button data-cmd="${x.id_comando}" class="${x.nombre === 'DETENER' ? 'det' : ''}">${esc(x.nombre.replace('_', ' '))}</button>`).join('');
+  } catch { $('#pad').innerHTML = '<span class="nota">No se pudieron cargar los comandos.</span>'; }
+  $('#pad').addEventListener('click', async e => {
+    const b = e.target.closest('[data-cmd]'); if (!b) return;
+    if (!KEY) { abrirHoja(); return; }
+    const r = await req('POST', '/movimientos', {id_vehiculo: 1, id_comando: +b.dataset.cmd, origen: 'APP'}, 'key');
+    toast(r.status === 201 ? `201 · ${r.datos.comando} (${r.ms} ms)` : `${r.status} · ${r.datos.detail || ''}`);
+  });
+}
+
+/* ============================================================
+   Navegación, ajustes e inicio
+   ============================================================ */
+function cambiarVista(v) {
+  document.querySelectorAll('.vista').forEach(s => s.classList.toggle('activa', s.id === 'v-' + v));
+  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('activa', b.dataset.v === v));
+  window.scrollTo({top: 0});
+  if (v === 'vivo') { if (!vivo.A || vivo.A.readyState > 1) { conectarVivo('A'); conectarVivo('B'); } cargarHistorial(); }
+}
+
+function abrirHoja() { $('#inKey').value = ''; $('#hoja').classList.add('vis'); setTimeout(() => $('#inKey').focus(), 50); }
+function pintarLlave() {
+  $('#ptoKey').className = 'punto ' + (KEY ? 'ok' : '');
+  $('#txtKey').textContent = KEY ? 'X-API-Key configurada' : 'sin X-API-Key (toca 🔑)';
+}
+
+document.querySelectorAll('nav button').forEach(b => b.addEventListener('click', () => cambiarVista(b.dataset.v)));
+$('#btnAjustes').onclick = abrirHoja;
+$('#btnCerrarHoja').onclick = () => $('#hoja').classList.remove('vis');
+$('#hoja').addEventListener('click', e => { if (e.target.id === 'hoja') $('#hoja').classList.remove('vis'); });
+$('#btnGuardarKey').onclick = async () => {
+  const k = $('#inKey').value.trim(); if (!k) return;
+  // Se valida con una operación inofensiva: cancelar sin DEMO activa → 404 si la llave es buena, 403 si es mala.
+  const old = KEY; KEY = k;
+  const r = await req('POST', '/vehiculos/1/demos/cancelar', null, 'key');
+  if (r.status === 403 || r.status === 401) { KEY = old; toast('Llave incorrecta (403)'); return; }
+  try { localStorage.setItem('x-api-key', k); } catch {}
+  pintarLlave(); $('#hoja').classList.remove('vis'); toast('X-API-Key válida y guardada en este dispositivo');
+};
+$('#btnBorrarKey').onclick = () => { KEY = ''; try { localStorage.removeItem('x-api-key'); } catch {} pintarLlave(); $('#hoja').classList.remove('vis'); toast('Llave borrada'); };
+$('#btnTodo').onclick = ejecutarTodo;
+$('#btnLimpiar').onclick = () => { Object.keys(ESTADO).forEach(k => delete ESTADO[k]); document.querySelectorAll('.res').forEach(r => { r.innerHTML = ''; r.classList.remove('vis'); }); document.querySelectorAll('.chip-estado').forEach(c => { c.className = 'chip chip-estado'; c.textContent = 'en vivo'; }); $('#txtTodo').textContent = ''; actualizarResumen(); };
+$('#btnDemo').onclick = async () => { if (!KEY) return abrirHoja(); const r = await req('POST', '/vehiculos/1/demos/1/iniciar', null, 'key'); toast(`${r.status} · ${r.datos.estado || r.datos.detail}`); };
+$('#btnCancelar').onclick = async () => { if (!KEY) return abrirHoja(); const r = await req('POST', '/vehiculos/1/demos/cancelar', null, 'key'); toast(`${r.status} · ${r.datos.estado || r.datos.detail}`); };
+$('#btnReconectar').onclick = () => { conectarVivo('A'); conectarVivo('B'); };
+$('#btnLimpiarLog').onclick = () => { $('#logA').innerHTML = ''; $('#logB').innerHTML = ''; };
+$('#visorCerrar').onclick = () => $('#visor').classList.remove('vis');
+$('#visorZoom').onclick = () => $('#visor').classList.toggle('zoom');
+
+renderCriterios(); renderGaleria(); renderEnlaces(); renderPad(); pintarLlave(); actualizarResumen();
+req('GET', '/salud').then(r => { $('#ptoApi').className = 'punto ' + (r.status === 200 ? 'ok' : 'mal'); $('#txtApi').textContent = r.status === 200 ? 'en línea' : r.status; })
+  .catch(() => { $('#ptoApi').className = 'punto mal'; $('#txtApi').textContent = 'sin conexión'; });
+(() => { const c = abrirWS(1); c.esperar('estado_inicial', 1, 8000).then(ok => { $('#ptoWs').className = 'punto ' + (ok ? 'ok' : 'mal'); $('#txtWs').textContent = ok ? 'conectado' : 'sin respuesta'; c.cerrar(); }); })();
+</script>
+</body>
+</html>

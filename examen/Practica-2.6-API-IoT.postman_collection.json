@@ -1,0 +1,524 @@
+{
+  "info": {
+    "_postman_id": "3386c446-084a-4d34-adb9-67f9c080f27e",
+    "name": "Práctica 2.6 — API IoT Vehículo (EC2, HTTPS/WSS)",
+    "description": "Llena la variable de colección api_key con el valor de API_KEY de tu .env (no se guarda en el archivo). El WebSocket (wss://100-63-187-92.sslip.io/ws/vehiculos/1) se abre aparte como solicitud WebSocket.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://100-63-187-92.sslip.io",
+      "type": "string"
+    },
+    {
+      "key": "api_key",
+      "value": "",
+      "type": "secret"
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Verificación",
+      "item": [
+        {
+          "name": "Salud",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/salud",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "salud"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"ok\", () => pm.expect(pm.response.json().estado).to.eql(\"ok\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Vehículos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehiculos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehiculos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Comandos del vehículo 1",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehiculos/1/comandos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehiculos",
+                "1",
+                "comandos"
+              ]
+            }
+          }
+        },
+        {
+          "name": "DEMO del vehículo 1",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehiculos/1/demos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehiculos",
+                "1",
+                "demos"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Prueba 1 — POST público + WSS",
+      "item": [
+        {
+          "name": "1.1 POST movimiento RETROCEDER",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/movimientos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "movimientos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_vehiculo\": 1,\n  \"id_comando\": 2,\n  \"origen\": \"POSTMAN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Devuelve el comando\", () => pm.expect(pm.response.json()).to.have.property(\"comando\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.2 POST movimiento GIRO_IZQUIERDA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/movimientos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "movimientos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_vehiculo\": 1,\n  \"id_comando\": 3,\n  \"origen\": \"POSTMAN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Devuelve el comando\", () => pm.expect(pm.response.json()).to.have.property(\"comando\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.3 POST movimiento GIRO_DERECHA",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/movimientos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "movimientos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_vehiculo\": 1,\n  \"id_comando\": 4,\n  \"origen\": \"POSTMAN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Devuelve el comando\", () => pm.expect(pm.response.json()).to.have.property(\"comando\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.4 POST movimiento AVANZAR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/movimientos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "movimientos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_vehiculo\": 1,\n  \"id_comando\": 1,\n  \"origen\": \"POSTMAN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Devuelve el comando\", () => pm.expect(pm.response.json()).to.have.property(\"comando\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.5 POST movimiento DETENER",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/movimientos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "movimientos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id_vehiculo\": 1,\n  \"id_comando\": 9,\n  \"origen\": \"POSTMAN\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"201 Created\", () => pm.response.to.have.status(201));",
+                  "pm.test(\"Devuelve el comando\", () => pm.expect(pm.response.json()).to.have.property(\"comando\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "1.6 GET último estado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehiculos/1/estado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehiculos",
+                "1",
+                "estado"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Prueba 2 — GET historial",
+      "item": [
+        {
+          "name": "2.1 GET historial (máx. 10, más reciente primero)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehiculos/1/historial",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehiculos",
+                "1",
+                "historial"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const h = pm.response.json();",
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Máximo 10 movimientos\", () => pm.expect(h.length).to.be.at.most(10));",
+                  "pm.test(\"Del más reciente al más antiguo\", () => { for (let i = 1; i < h.length; i++) pm.expect(h[i-1].id_historial).to.be.above(h[i].id_historial); });",
+                  "pm.test(\"Sin movimientos DEMO\", () => h.forEach(x => pm.expect(String(x.origen).toUpperCase()).to.not.include(\"DEMO\")));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Prueba 3 — DEMO por WSS sin historial",
+      "item": [
+        {
+          "name": "3.1 POST iniciar DEMO",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehiculos/1/demos/1/iniciar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehiculos",
+                "1",
+                "demos",
+                "1",
+                "iniciar"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"202 Accepted\", () => pm.response.to.have.status(202));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.2 GET último estado tras la DEMO",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehiculos/1/estado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehiculos",
+                "1",
+                "estado"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.3 GET historial (igual al de 2.1)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/vehiculos/1/historial",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehiculos",
+                "1",
+                "historial"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const h = pm.response.json();",
+                  "pm.test(\"200 OK\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Máximo 10 movimientos\", () => pm.expect(h.length).to.be.at.most(10));",
+                  "pm.test(\"Del más reciente al más antiguo\", () => { for (let i = 1; i < h.length; i++) pm.expect(h[i-1].id_historial).to.be.above(h[i].id_historial); });",
+                  "pm.test(\"Sin movimientos DEMO\", () => h.forEach(x => pm.expect(String(x.origen).toUpperCase()).to.not.include(\"DEMO\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3.4 POST cancelar DEMO (opcional)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-API-Key",
+                "value": "{{api_key}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/vehiculos/1/demos/cancelar",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "vehiculos",
+                "1",
+                "demos",
+                "cancelar"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

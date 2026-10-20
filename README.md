@@ -11,6 +11,7 @@ práctica 2.5 (etiqueta `v2.5-entregada`), ahora **publicada en Amazon EC2** con
 | API (HTTPS) | <https://100-63-187-92.sslip.io> |
 | Swagger UI | <https://100-63-187-92.sslip.io/docs> |
 | Página de control | <https://100-63-187-92.sslip.io/control/> |
+| App del examen 2.6 (criterios con pruebas en vivo y evidencias) | <https://100-63-187-92.sslip.io/examen/> |
 | WebSocket (WSS) del vehículo 1 | `wss://100-63-187-92.sslip.io/ws/vehiculos/1` |
 | Página en GitHub Pages | <https://juanel2804.github.io/vehiculo-iot-api/> (apunta a la API pública) |
 
