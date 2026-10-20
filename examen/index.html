@@ -89,10 +89,62 @@
   .estado-grande { display:flex; align-items:center; gap:14px; }
   .estado-grande .cmd { font-size:clamp(17px, 6vw, 26px); font-weight:800; letter-spacing:.3px; overflow-wrap:anywhere; }
   .estado-grande .meta { color:var(--tenue); font-size:12.5px; }
-  .pad { display:grid; grid-template-columns:repeat(3, 1fr); gap:8px; }
-  .pad button { background:var(--card2); border:1px solid var(--borde); border-radius:12px; padding:13px 6px; font-size:12.5px; font-weight:650; }
-  .pad button:active { transform:scale(.97); background:#262b36; }
-  .pad button.det { background:rgba(229,56,59,.18); border-color:rgba(229,56,59,.5); }
+  /* Control tipo gamepad (sin joystick) */
+  .mando { position:relative; margin:4px 0 10px; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
+  .hombros { display:flex; justify-content:space-between; padding:0 18px; margin-bottom:-12px; position:relative; z-index:0; }
+  .hombro { width:40%; padding:9px 0 18px; border-radius:16px 16px 6px 6px; background:linear-gradient(#3a3f4b, #2a2e37);
+            border:1px solid #454b58; font-size:11.5px; font-weight:800; letter-spacing:.6px; color:#cfd4dd; }
+  .hombro.l { border-top-left-radius:26px; } .hombro.r { border-top-right-radius:26px; }
+  .hombro:active, .hombro.pulsado { background:linear-gradient(#4a505d, #343943); transform:translateY(2px); }
+  .cuerpo { position:relative; z-index:1; background:linear-gradient(160deg, #2b303a, #1b1e25 60%); border:1px solid #3a404c;
+            border-radius:34px 34px 70px 70px; padding:14px 14px 26px; box-shadow:0 12px 30px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.06); }
+  .pantalla { background:#0d1a12; border:2px solid #0a0f0c; border-radius:12px; padding:10px 12px; margin:0 6px 16px;
+              box-shadow:inset 0 0 18px rgba(0,0,0,.7); font-family:var(--mono); color:#7dffa8; min-height:84px; }
+  .pantalla .cmd { font-size:clamp(17px, 5.6vw, 23px); font-weight:800; letter-spacing:1px; text-shadow:0 0 8px rgba(125,255,168,.45); overflow-wrap:anywhere; }
+  .pantalla .lin { font-size:11.5px; color:#58c983; margin-top:3px; display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+  .pantalla .lin b { color:#9dffbf; font-weight:600; }
+  .pantalla .barra-lcd { height:5px; background:#163322; border-radius:3px; margin-top:7px; overflow:hidden; }
+  .pantalla .barra-lcd i { display:block; height:100%; width:0; background:#7dffa8; transition:width .3s; }
+  .zona { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:6px; }
+  .dpad { position:relative; width:132px; height:132px; justify-self:center; }
+  .dpad::before { content:""; position:absolute; left:44px; top:0; width:44px; height:132px; background:#14171c; border-radius:9px; box-shadow:0 3px 0 #0b0d10; }
+  .dpad::after { content:""; position:absolute; left:0; top:44px; width:132px; height:44px; background:#14171c; border-radius:9px; box-shadow:0 3px 0 #0b0d10; }
+  .dpad button { position:absolute; z-index:2; width:44px; height:44px; background:transparent; color:#aab2c0; font-size:17px; display:grid; place-items:center; border-radius:8px; }
+  .dpad button:active, .dpad button.pulsado { background:#2b313c; color:#fff; }
+  .dpad .ar { left:44px; top:0; } .dpad .ab { left:44px; top:88px; } .dpad .iz { left:0; top:44px; } .dpad .de { left:88px; top:44px; }
+  .dpad .eje { position:absolute; z-index:3; left:57px; top:57px; width:18px; height:18px; border-radius:50%; background:#0d0f13; pointer-events:none; }
+  .centro { display:flex; flex-direction:column; align-items:center; gap:10px; }
+  .stop { width:62px; height:62px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #ff6b6d, #c81d20 70%); color:#fff;
+          font-weight:900; font-size:12px; letter-spacing:.5px; box-shadow:0 4px 0 #7d1113, 0 0 0 4px #14171c; }
+  .stop:active, .stop.pulsado { transform:translateY(3px); box-shadow:0 1px 0 #7d1113, 0 0 0 4px #14171c; }
+  .mini { display:flex; gap:8px; }
+  .mini button { width:34px; height:13px; border-radius:7px; background:#14171c; box-shadow:0 2px 0 #0b0d10; }
+  .mini span { font-size:8.5px; color:var(--tenue); letter-spacing:.5px; }
+  .acciones { position:relative; width:132px; height:132px; justify-self:center; }
+  .acciones button { position:absolute; width:46px; height:46px; border-radius:50%; font-size:16px; font-weight:800; color:#fff; display:grid; place-items:center;
+                     box-shadow:0 4px 0 rgba(0,0,0,.55); }
+  .acciones button:active, .acciones button.pulsado { transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.55); filter:brightness(1.2); }
+  .acciones .y { left:43px; top:0; background:radial-gradient(circle at 35% 30%, #ffd166, #d99a0b); }
+  .acciones .a { left:43px; top:86px; background:radial-gradient(circle at 35% 30%, #6ee7a0, #1f9d55); }
+  .acciones .x { left:0; top:43px; background:radial-gradient(circle at 35% 30%, #7cc0ff, #2463c9); }
+  .acciones .b { left:86px; top:43px; background:radial-gradient(circle at 35% 30%, #c9a6ff, #7c4ddb); }
+  @media (max-width: 420px) {
+    .cuerpo { padding:12px 10px 22px; }
+    .zona { gap:4px; }
+    .dpad, .acciones { width:114px; height:114px; }
+    .dpad::before { left:38px; width:38px; height:114px; } .dpad::after { top:38px; width:114px; height:38px; }
+    .dpad button { width:38px; height:38px; font-size:15px; }
+    .dpad .ar { left:38px; } .dpad .ab { left:38px; top:76px; } .dpad .iz { top:38px; } .dpad .de { left:76px; top:38px; }
+    .dpad .eje { left:49px; top:49px; width:16px; height:16px; }
+    .acciones button { width:40px; height:40px; font-size:15px; }
+    .acciones .y { left:37px; } .acciones .a { left:37px; top:74px; } .acciones .x { top:37px; } .acciones .b { left:74px; top:37px; }
+    .stop { width:56px; height:56px; font-size:11px; }
+    .mini button { width:28px; }
+  }
+  .etiquetas { display:grid; grid-template-columns:1fr auto 1fr; gap:6px; margin-top:12px; font-size:10.5px; color:#9aa3b2; text-align:center; line-height:1.5; }
+  .etiquetas b { color:#dfe3ea; font-weight:700; }
+  .agarre { display:flex; justify-content:space-between; padding:0 30px; margin-top:-30px; position:relative; z-index:0; }
+  .agarre i { width:92px; height:44px; border-radius:0 0 46px 46px; background:#1b1e25; border:1px solid #3a404c; border-top:0; }
   .progreso { height:10px; background:var(--card2); border-radius:6px; overflow:hidden; margin:10px 0 6px; }
   .progreso i { display:block; height:100%; width:0; background:var(--morado); transition:width .3s; }
   .clientes { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
@@ -196,32 +248,47 @@
 
     <!-- ===================== EN VIVO ===================== -->
     <section class="vista" id="v-vivo">
-      <h2 class="sec" style="margin-top:4px">Vehículo 1 · último estado (RDS)</h2>
-      <div class="card">
-        <div class="estado-grande">
-          <div style="font-size:34px">🚜</div>
-          <div style="flex:1;min-width:0">
+      <h2 class="sec" style="margin-top:4px">Control del vehículo 1 · POST /movimientos</h2>
+      <div class="mando" id="mando">
+        <div class="hombros">
+          <button class="hombro l" data-accion="demo">L · DEMO ▶</button>
+          <button class="hombro r" data-accion="cancelar">R · CANCELAR ■</button>
+        </div>
+        <div class="cuerpo">
+          <div class="pantalla">
             <div class="cmd" id="vivoCmd">—</div>
-            <div class="meta" id="vivoMeta">Esperando estado_inicial…</div>
+            <div class="lin"><span id="vivoMeta">Esperando estado_inicial…</span><span id="lcdResp"></span></div>
+            <div class="barra-lcd"><i id="demoBarra"></i></div>
+            <div class="lin"><span id="demoTxt">Sin DEMO en ejecución.</span><span><b id="lcdWs">WSS ○○</b></span></div>
+          </div>
+          <div class="zona">
+            <div class="dpad">
+              <button class="ar" data-cmd="AVANZAR" aria-label="Avanzar">▲</button>
+              <button class="iz" data-cmd="GIRO_IZQUIERDA" aria-label="Giro izquierda">◀</button>
+              <button class="de" data-cmd="GIRO_DERECHA" aria-label="Giro derecha">▶</button>
+              <button class="ab" data-cmd="RETROCEDER" aria-label="Retroceder">▼</button>
+              <span class="eje"></span>
+            </div>
+            <div class="centro">
+              <button class="stop" data-cmd="DETENER">STOP</button>
+              <div class="mini"><div style="text-align:center"><button data-accion="historial" aria-label="Historial"></button><br><span>HIST</span></div>
+                <div style="text-align:center"><button data-accion="reconectar" aria-label="Reconectar"></button><br><span>WSS</span></div></div>
+            </div>
+            <div class="acciones">
+              <button class="y" data-cmd="PALA_ARRIBA" aria-label="Pala arriba">▲</button>
+              <button class="x" data-cmd="ROTACION_IZQUIERDA" aria-label="Rotación izquierda">⟲</button>
+              <button class="b" data-cmd="ROTACION_DERECHA" aria-label="Rotación derecha">⟳</button>
+              <button class="a" data-cmd="PALA_ABAJO" aria-label="Pala abajo">▼</button>
+            </div>
+          </div>
+          <div class="etiquetas">
+            <div><b>Cruceta</b><br>▲ Avanzar · ▼ Retroceder<br>◀ ▶ Giro izq. / der.</div>
+            <div><b>STOP</b><br>Detener</div>
+            <div><b>Botones</b><br><span style="color:#ffd166">▲</span> Pala arriba · <span style="color:#6ee7a0">▼</span> abajo<br><span style="color:#7cc0ff">⟲</span> <span style="color:#c9a6ff">⟳</span> Rotación</div>
           </div>
         </div>
       </div>
-
-      <h2 class="sec">Movimiento individual · POST /movimientos</h2>
-      <div class="card">
-        <div class="pad" id="pad"></div>
-        <div class="nota" style="margin-top:8px">Actualiza estado + historial en una transacción y notifica a los dos clientes WSS.</div>
-      </div>
-
-      <h2 class="sec">DEMO · N movimientos por WSS (sin historial)</h2>
-      <div class="card">
-        <div class="fila">
-          <button class="boton" id="btnDemo">▶ Iniciar DEMO 1</button>
-          <button class="boton sec" id="btnCancelar">■ Cancelar</button>
-        </div>
-        <div class="progreso"><i id="demoBarra"></i></div>
-        <div class="nota" id="demoTxt">Sin DEMO en ejecución.</div>
-      </div>
+      <div class="nota" style="margin:0 4px 6px">Cada botón manda un POST que actualiza estado + historial en una transacción y llega por WSS a los dos clientes. L inicia la DEMO 1 (N movimientos por WSS, sin historial) y R la cancela. Teclado: W/S/A/D, J/L rotación, R/F pala, espacio STOP.</div>
 
       <h2 class="sec">Dos clientes WSS · wss://…/ws/vehiculos/1</h2>
       <div class="clientes">
@@ -299,6 +366,15 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':
 const hora = (d = new Date()) => d.toLocaleTimeString('es-MX', {hour12:false}) + '.' + String(d.getMilliseconds()).padStart(3, '0');
 const dormir = ms => new Promise(r => setTimeout(r, ms));
 let KEY = ''; try { KEY = localStorage.getItem('x-api-key') || ''; } catch {}
+// Link privado: …/examen/#k=LLAVE. El fragmento (#) nunca se envía al servidor ni queda en Git;
+// se guarda en este dispositivo y se borra de la barra de direcciones.
+(() => {
+  const m = location.hash.match(/[#&]k=([^&]+)/);
+  if (!m) return;
+  KEY = decodeURIComponent(m[1]);
+  try { localStorage.setItem('x-api-key', KEY); } catch {}
+  history.replaceState(null, '', location.pathname + location.search);
+})();
 
 function toast(t) { const e = $('#toast'); e.textContent = t; e.classList.add('vis'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('vis'), 2600); }
 
@@ -906,8 +982,8 @@ function conectarVivo(cli) {
   if (vivo[cli]) try { vivo[cli].close(); } catch {}
   const ws = new WebSocket(`${WSS}/ws/vehiculos/1`);
   vivo[cli] = ws;
-  ws.onopen = () => { $('#pto' + cli).className = 'punto ok'; if (cli === 'A') { $('#ptoWs').className = 'punto ok'; $('#txtWs').textContent = 'conectado'; } };
-  ws.onclose = () => { $('#pto' + cli).className = 'punto mal'; if (cli === 'A') { $('#ptoWs').className = 'punto mal'; $('#txtWs').textContent = 'desconectado'; } };
+  ws.onopen = () => { $('#pto' + cli).className = 'punto ok'; pintarWsLcd(); if (cli === 'A') { $('#ptoWs').className = 'punto ok'; $('#txtWs').textContent = 'conectado'; } };
+  ws.onclose = () => { if (vivo[cli] !== ws) return; $('#pto' + cli).className = 'punto mal'; pintarWsLcd(); if (cli === 'A') { $('#ptoWs').className = 'punto mal'; $('#txtWs').textContent = 'desconectado'; } };
   ws.onmessage = ev => {
     let d; try { d = JSON.parse(ev.data); } catch { return; }
     logEvento(cli, d);
@@ -931,17 +1007,55 @@ async function cargarHistorial() {
   } catch { $('#vivoHist').innerHTML = '<span class="nota">No se pudo consultar.</span>'; }
 }
 
-async function renderPad() {
+const COMANDOS = {};   // nombre -> id_comando (catálogo del vehículo 1 en RDS)
+
+async function enviarComando(nombre) {
+  if (!KEY) { abrirHoja(); return; }
+  const id = COMANDOS[nombre];
+  if (!id) { toast(`El comando ${nombre} no está en el catálogo`); return; }
+  $('#lcdResp').textContent = 'POST…';
+  const r = await req('POST', '/movimientos', {id_vehiculo: 1, id_comando: id, origen: 'APP'}, 'key');
+  $('#lcdResp').innerHTML = r.status === 201 ? `<b>201</b> · ${r.ms} ms` : `<b>${r.status}</b> · ${esc(r.datos.detail || '')}`;
+  if (r.status !== 201) toast(`${r.status} · ${r.datos.detail || ''}`);
+}
+
+async function accionMando(accion) {
+  if (accion === 'reconectar') { conectarVivo('A'); conectarVivo('B'); toast('Reconectando los dos clientes WSS'); return; }
+  if (accion === 'historial') { await cargarHistorial(); document.getElementById('vivoHist').scrollIntoView({behavior: 'smooth'}); return; }
+  if (!KEY) { abrirHoja(); return; }
+  const r = accion === 'demo'
+    ? await req('POST', '/vehiculos/1/demos/1/iniciar', null, 'key')
+    : await req('POST', '/vehiculos/1/demos/cancelar', null, 'key');
+  $('#lcdResp').innerHTML = `<b>${r.status}</b> · ${esc(r.datos.estado || r.datos.detail || '')}`;
+}
+
+function pulsar(b) { b.classList.add('pulsado'); setTimeout(() => b.classList.remove('pulsado'), 140); try { navigator.vibrate?.(18); } catch {} }
+
+async function renderMando() {
   try {
     const c = await req('GET', '/vehiculos/1/comandos');
-    $('#pad').innerHTML = c.datos.filter(x => x.activo !== false).map(x => `<button data-cmd="${x.id_comando}" class="${x.nombre === 'DETENER' ? 'det' : ''}">${esc(x.nombre.replace('_', ' '))}</button>`).join('');
-  } catch { $('#pad').innerHTML = '<span class="nota">No se pudieron cargar los comandos.</span>'; }
-  $('#pad').addEventListener('click', async e => {
-    const b = e.target.closest('[data-cmd]'); if (!b) return;
-    if (!KEY) { abrirHoja(); return; }
-    const r = await req('POST', '/movimientos', {id_vehiculo: 1, id_comando: +b.dataset.cmd, origen: 'APP'}, 'key');
-    toast(r.status === 201 ? `201 · ${r.datos.comando} (${r.ms} ms)` : `${r.status} · ${r.datos.detail || ''}`);
+    c.datos.filter(x => x.activo !== false).forEach(x => { COMANDOS[x.nombre] = x.id_comando; });
+  } catch { toast('No se pudo leer el catálogo de comandos'); }
+  $('#mando').addEventListener('click', e => {
+    const b = e.target.closest('[data-cmd], [data-accion]'); if (!b) return;
+    pulsar(b);
+    if (b.dataset.cmd) enviarComando(b.dataset.cmd); else accionMando(b.dataset.accion);
   });
+  const TECLAS = {w: 'AVANZAR', s: 'RETROCEDER', a: 'GIRO_IZQUIERDA', d: 'GIRO_DERECHA', j: 'ROTACION_IZQUIERDA', l: 'ROTACION_DERECHA', r: 'PALA_ARRIBA', f: 'PALA_ABAJO', ' ': 'DETENER',
+                  ArrowUp: 'AVANZAR', ArrowDown: 'RETROCEDER', ArrowLeft: 'GIRO_IZQUIERDA', ArrowRight: 'GIRO_DERECHA'};
+  document.addEventListener('keydown', e => {
+    if (!$('#v-vivo').classList.contains('activa') || e.repeat || e.target.tagName === 'INPUT') return;
+    const nombre = TECLAS[e.key] || TECLAS[e.key.toLowerCase()];
+    if (!nombre) return;
+    e.preventDefault();
+    const b = document.querySelector(`#mando [data-cmd="${nombre}"]`); if (b) pulsar(b);
+    enviarComando(nombre);
+  });
+}
+
+function pintarWsLcd() {
+  const s = c => vivo[c] && vivo[c].readyState === 1 ? '●' : '○';
+  $('#lcdWs').textContent = `WSS A${s('A')} B${s('B')}`;
 }
 
 /* ============================================================
@@ -976,14 +1090,12 @@ $('#btnGuardarKey').onclick = async () => {
 $('#btnBorrarKey').onclick = () => { KEY = ''; try { localStorage.removeItem('x-api-key'); } catch {} pintarLlave(); $('#hoja').classList.remove('vis'); toast('Llave borrada'); };
 $('#btnTodo').onclick = ejecutarTodo;
 $('#btnLimpiar').onclick = () => { Object.keys(ESTADO).forEach(k => delete ESTADO[k]); document.querySelectorAll('.res').forEach(r => { r.innerHTML = ''; r.classList.remove('vis'); }); document.querySelectorAll('.chip-estado').forEach(c => { c.className = 'chip chip-estado'; c.textContent = 'en vivo'; }); $('#txtTodo').textContent = ''; actualizarResumen(); };
-$('#btnDemo').onclick = async () => { if (!KEY) return abrirHoja(); const r = await req('POST', '/vehiculos/1/demos/1/iniciar', null, 'key'); toast(`${r.status} · ${r.datos.estado || r.datos.detail}`); };
-$('#btnCancelar').onclick = async () => { if (!KEY) return abrirHoja(); const r = await req('POST', '/vehiculos/1/demos/cancelar', null, 'key'); toast(`${r.status} · ${r.datos.estado || r.datos.detail}`); };
 $('#btnReconectar').onclick = () => { conectarVivo('A'); conectarVivo('B'); };
 $('#btnLimpiarLog').onclick = () => { $('#logA').innerHTML = ''; $('#logB').innerHTML = ''; };
 $('#visorCerrar').onclick = () => $('#visor').classList.remove('vis');
 $('#visorZoom').onclick = () => $('#visor').classList.toggle('zoom');
 
-renderCriterios(); renderGaleria(); renderEnlaces(); renderPad(); pintarLlave(); actualizarResumen();
+renderCriterios(); renderGaleria(); renderEnlaces(); renderMando(); pintarLlave(); actualizarResumen();
 req('GET', '/salud').then(r => { $('#ptoApi').className = 'punto ' + (r.status === 200 ? 'ok' : 'mal'); $('#txtApi').textContent = r.status === 200 ? 'en línea' : r.status; })
   .catch(() => { $('#ptoApi').className = 'punto mal'; $('#txtApi').textContent = 'sin conexión'; });
 (() => { const c = abrirWS(1); c.esperar('estado_inicial', 1, 8000).then(ok => { $('#ptoWs').className = 'punto ' + (ok ? 'ok' : 'mal'); $('#txtWs').textContent = ok ? 'conectado' : 'sin respuesta'; c.cerrar(); }); })();
