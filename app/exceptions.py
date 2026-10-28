@@ -23,3 +23,8 @@ class SolicitudInvalida(ErrorDominio):
 
 class ServicioNoDisponible(ErrorDominio):
     status_code = 503
+
+
+class ErrorExterno(ErrorDominio):
+    """Un servicio externo (p. ej. el copiloto con Claude) respondió mal."""
+    status_code = 502

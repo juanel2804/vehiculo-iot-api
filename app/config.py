@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     api_key: str
     # Orígenes web que pueden llamar a la API desde el navegador (la página publicada en GitHub Pages)
     cors_origins: str = "https://juanel2804.github.io"
+    # Copiloto con Claude (opcional): sin llave, el endpoint /copiloto responde 503
+    anthropic_api_key: str | None = None
 
 
 @lru_cache

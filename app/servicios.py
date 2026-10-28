@@ -5,6 +5,7 @@ from app.config import Settings
 from app.database import Database
 from app.repositories import ComandoRepository, DemoRepository, EstadoRepository, HistorialRepository, VehiculoRepository
 from app.services.comandos import ComandoService
+from app.services.copiloto import CopilotoService
 from app.services.demos import DemoService
 from app.services.ejecutor_demo import EjecutorDemo
 from app.services.estado import EstadoService
@@ -28,6 +29,7 @@ class Servicios:
         self.movimientos = MovimientoService(self.db, self.vehiculos, self.comandos, estado_repo, historial_repo,
                                              self.ejecutor.en_curso)
         self.demos = DemoService(self.db, demos_repo, self.vehiculos, self.comandos, self.ejecutor.en_curso)
+        self.copiloto = CopilotoService(settings.anthropic_api_key)
 
 
 def get_servicios(request: Request) -> Servicios:
