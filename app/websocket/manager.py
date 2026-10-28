@@ -16,6 +16,13 @@ def ahora_iso() -> str:
 class ConnectionManager:
     def __init__(self) -> None:
         self._clientes: dict[int, set[WebSocket]] = {}
+        self._telemetria: dict[int, dict] = {}   # último reporte del ESP32 de cada vehículo (en memoria)
+
+    def guardar_telemetria(self, id_vehiculo: int, datos: dict) -> None:
+        self._telemetria[id_vehiculo] = {**datos, "timestamp": ahora_iso()}
+
+    def telemetria(self, id_vehiculo: int) -> dict | None:
+        return self._telemetria.get(id_vehiculo)
 
     def total(self, id_vehiculo: int) -> int:
         return len(self._clientes.get(id_vehiculo, ()))
