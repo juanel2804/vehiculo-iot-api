@@ -1,0 +1,672 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Excavadora de Juan</title>
+<meta name="description" content="Control de la excavadora IoT: botones, voz y gestos con la cámara.">
+<meta name="theme-color" content="#1b1d22">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icono-192.png">
+<link rel="apple-touch-icon" href="icono-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+  :root {
+    --fondo: #f3f4f6; --panel: #ffffff; --texto: #15171a; --suave: #5d636e; --borde: #d6d9de;
+    --boton: #eceef1; --boton-activo: #ffb000; --texto-activo: #15171a;
+    --rojo: #d92d20; --verde: #12805c; --amarillo: #b26b00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --fondo: #121417; --panel: #1b1d22; --texto: #eef0f3; --suave: #9aa1ac; --borde: #2c3038;
+      --boton: #262a31; --boton-activo: #ffb000; --texto-activo: #121417;
+      --rojo: #f04438; --verde: #32d583; --amarillo: #fdb022;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--fondo); color: var(--texto);
+    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  body { padding-bottom: calc(68px + env(safe-area-inset-bottom)); }
+  button { font: inherit; color: inherit; }
+
+  /* ---------- encabezado ---------- */
+  header { position: sticky; top: 0; z-index: 5; background: var(--panel); border-bottom: 1px solid var(--borde);
+    padding: 10px 16px; padding-top: calc(10px + env(safe-area-inset-top)); }
+  .titulo { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  h1 { font-size: 18px; margin: 0; }
+  .estados { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .chip { font-size: 12px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--borde); color: var(--suave); white-space: nowrap; }
+  .chip.ok { color: var(--verde); border-color: currentColor; }
+  .chip.mal { color: var(--rojo); border-color: currentColor; }
+
+  main { max-width: 560px; margin: 0 auto; padding: 12px 16px; }
+  section[hidden] { display: none; }
+  h2 { font-size: 16px; margin: 18px 0 8px; }
+  p, li { color: var(--suave); }
+  .tarjeta { background: var(--panel); border: 1px solid var(--borde); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+
+  /* ---------- control ---------- */
+  .pantalla { text-align: center; padding: 10px; }
+  .pantalla .cmd { font-size: 26px; font-weight: 700; letter-spacing: .5px; }
+  .pantalla .cmd.alto { color: var(--rojo); }
+  .pantalla .det { font-size: 13px; color: var(--suave); }
+  .grupo { display: grid; gap: 8px; }
+  .cruz { grid-template-columns: repeat(3, 1fr); grid-template-areas: ". n ." "o c e" ". s ."; }
+  .par { grid-template-columns: 1fr 1fr; }
+  .mando { touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none;
+    min-height: 64px; border: 1px solid var(--borde); border-radius: 12px; background: var(--boton);
+    font-weight: 600; font-size: 15px; cursor: pointer; }
+  .mando .ico { display: block; font-size: 24px; line-height: 1.1; }
+  .mando.activo { background: var(--boton-activo); color: var(--texto-activo); border-color: var(--boton-activo); }
+  .mando:disabled { opacity: .45; }
+  .n { grid-area: n; } .o { grid-area: o; } .e { grid-area: e; } .s { grid-area: s; } .c { grid-area: c; }
+  /* DETENER siempre visible encima de la navegación */
+  .stop { position: fixed; left: 16px; right: 16px; bottom: calc(72px + env(safe-area-inset-bottom)); z-index: 4;
+    max-width: 528px; margin: 0 auto; min-height: 60px; border: 0; border-radius: 12px; background: var(--rojo); color: #fff;
+    font-size: 20px; font-weight: 800; letter-spacing: 1px; cursor: pointer; touch-action: manipulation; }
+  #vistaControl { padding-bottom: 76px; }
+  .cuatro { grid-template-columns: 1fr 1fr; }
+  .etiqueta { font-size: 13px; font-weight: 700; color: var(--suave); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .5px; }
+  .fila { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .segmentos { display: inline-flex; border: 1px solid var(--borde); border-radius: 10px; overflow: hidden; }
+  .segmentos button { border: 0; background: transparent; padding: 8px 12px; cursor: pointer; }
+  .segmentos button[aria-pressed="true"] { background: var(--boton-activo); color: var(--texto-activo); font-weight: 700; }
+  .nota { font-size: 13px; color: var(--suave); }
+
+  /* ---------- voz y gestos ---------- */
+  .grande { width: 100%; min-height: 64px; border-radius: 12px; border: 1px solid var(--borde); background: var(--boton);
+    font-size: 17px; font-weight: 700; cursor: pointer; }
+  .grande.encendido { background: var(--boton-activo); color: var(--texto-activo); border-color: var(--boton-activo); }
+  .salida { min-height: 48px; font-size: 15px; padding: 10px; border-radius: 10px; background: var(--fondo); border: 1px dashed var(--borde); margin-top: 10px; }
+  .camara { position: relative; margin-top: 10px; border-radius: 12px; overflow: hidden; background: #000; aspect-ratio: 4 / 3; }
+  .camara video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
+  .camara .zonas { position: absolute; inset: 0; display: grid; grid-template-columns: 35% 30% 35%; pointer-events: none; }
+  .camara .zonas div { border-right: 1px dashed rgba(255,255,255,.35); }
+  .camara .zonas div:last-child { border-right: 0; }
+  .camara .lectura { position: absolute; left: 8px; right: 8px; bottom: 8px; background: rgba(0,0,0,.65); color: #fff;
+    padding: 6px 10px; border-radius: 8px; font-size: 15px; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td { padding: 6px 4px; border-bottom: 1px solid var(--borde); vertical-align: top; }
+  td:first-child { white-space: nowrap; width: 1%; padding-right: 10px; }
+
+  /* ---------- formularios ---------- */
+  label { display: block; font-size: 14px; color: var(--suave); margin: 10px 0 4px; }
+  input, select { width: 100%; font: inherit; color: var(--texto); background: var(--fondo); border: 1px solid var(--borde);
+    border-radius: 10px; padding: 10px; }
+  .secundario { border: 1px solid var(--borde); background: var(--boton); border-radius: 10px; padding: 10px 14px; cursor: pointer; font-weight: 600; }
+  a.secundario { display: inline-block; text-decoration: none; color: var(--texto); }
+  ol { padding-left: 20px; } ol li { margin-bottom: 6px; }
+  code { background: var(--fondo); border: 1px solid var(--borde); border-radius: 6px; padding: 1px 5px; color: var(--texto); }
+
+  /* ---------- navegación inferior ---------- */
+  nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: grid; grid-template-columns: repeat(5, 1fr);
+    background: var(--panel); border-top: 1px solid var(--borde); padding-bottom: env(safe-area-inset-bottom); }
+  nav button { border: 0; background: transparent; padding: 8px 2px 10px; font-size: 12px; color: var(--suave); cursor: pointer; }
+  nav button .ico { display: block; font-size: 20px; }
+  nav button[aria-current="page"] { color: var(--texto); font-weight: 700; }
+
+  .aviso { position: fixed; left: 16px; right: 16px; bottom: calc(80px + env(safe-area-inset-bottom)); z-index: 6;
+    max-width: 528px; margin: 0 auto; background: var(--texto); color: var(--fondo); padding: 10px 14px; border-radius: 10px; font-size: 14px; }
+  .aviso[hidden] { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="titulo">
+    <h1>🚜 Excavadora de Juan</h1>
+    <span class="chip" id="chipLatencia" title="Tiempo de respuesta de la API">— ms</span>
+  </div>
+  <div class="estados">
+    <span class="chip" id="chipServidor">Servidor: …</span>
+    <span class="chip" id="chipExcavadora">Excavadora: …</span>
+    <span class="chip" id="chipLlave" hidden>Sin llave</span>
+  </div>
+</header>
+
+<main>
+  <!-- =============================== CONTROL =============================== -->
+  <section id="vistaControl">
+    <div class="tarjeta pantalla">
+      <div class="cmd alto" id="cmdActual">DETENIDO</div>
+      <div class="det" id="cmdDetalle">Toca = pulso · Mantén presionado = movimiento continuo</div>
+      <div class="fila" style="justify-content:center;margin-top:8px">
+        <span class="nota">Pulso</span>
+        <div class="segmentos" id="segPulso">
+          <button data-ms="200">0.2 s</button><button data-ms="500">0.5 s</button><button data-ms="1000">1 s</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="etiqueta">Tracción</div>
+    <div class="grupo cruz">
+      <button class="mando n" data-cmd="AVANZAR"><span class="ico">▲</span>Avanzar</button>
+      <button class="mando o" data-cmd="GIRO_IZQUIERDA"><span class="ico">◀</span>Girar</button>
+      <button class="mando c" data-cmd="DETENER" aria-label="Detener"><span class="ico">■</span>Alto</button>
+      <button class="mando e" data-cmd="GIRO_DERECHA"><span class="ico">▶</span>Girar</button>
+      <button class="mando s" data-cmd="RETROCEDER"><span class="ico">▼</span>Retroceder</button>
+    </div>
+
+    <div class="etiqueta">Cabina y pala</div>
+    <div class="grupo cuatro">
+      <button class="mando" data-cmd="ROTACION_IZQUIERDA"><span class="ico">↺</span>Cabina izq.</button>
+      <button class="mando" data-cmd="ROTACION_DERECHA"><span class="ico">↻</span>Cabina der.</button>
+      <button class="mando" data-cmd="PALA_ARRIBA"><span class="ico">⤒</span>Subir pala</button>
+      <button class="mando" data-cmd="PALA_ABAJO"><span class="ico">⤓</span>Bajar pala</button>
+    </div>
+
+    <button class="stop" id="btnStop">DETENER</button>
+    <p class="nota">Teclado: W A S D o flechas · Q / E cabina · R / F pala · Espacio = detener.</p>
+  </section>
+
+  <!-- ================================= VOZ ================================= -->
+  <section id="vistaVoz" hidden>
+    <div class="tarjeta">
+      <button class="grande" id="btnVoz">🎤 Activar voz</button>
+      <div class="salida" id="vozOido">Di un comando, por ejemplo: <em>“avanza dos segundos”</em>.</div>
+      <div class="salida" id="vozAccion">—</div>
+      <p class="nota" id="vozSoporte"></p>
+    </div>
+    <div class="tarjeta">
+      <div class="fila">
+        <strong>Sin duración, cada orden dura</strong>
+        <div class="segmentos" id="segVoz">
+          <button data-ms="1000">1 s</button><button data-ms="2000">2 s</button><button data-ms="0">Hasta “alto”</button>
+        </div>
+      </div>
+    </div>
+    <h2>Qué puedes decir</h2>
+    <div class="tarjeta">
+      <table>
+        <tr><td><b>Alto</b></td><td>“alto”, “para”, “detente”, “stop”, “frena”</td></tr>
+        <tr><td><b>Avanzar</b></td><td>“avanza”, “adelante”</td></tr>
+        <tr><td><b>Retroceder</b></td><td>“atrás”, “retrocede”, “reversa”</td></tr>
+        <tr><td><b>Girar</b></td><td>“gira a la izquierda”, “derecha”</td></tr>
+        <tr><td><b>Cabina</b></td><td>“cabina izquierda”, “rota a la derecha”</td></tr>
+        <tr><td><b>Pala</b></td><td>“sube la pala”, “baja la pala”, “arriba”, “abajo”</td></tr>
+        <tr><td><b>Tiempo</b></td><td>“… 3 segundos”, “… medio segundo”, “… sin parar”</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- =============================== GESTOS =============================== -->
+  <section id="vistaGestos" hidden>
+    <div class="tarjeta">
+      <button class="grande" id="btnCamara">📷 Activar cámara</button>
+      <div class="camara" id="cajaCamara" hidden>
+        <video id="video" playsinline muted></video>
+        <div class="zonas"><div></div><div></div><div></div></div>
+        <div class="lectura" id="gestoLectura">Cargando modelo…</div>
+      </div>
+      <p class="nota">Mientras sostienes el gesto la excavadora se mueve; si bajas la mano o haces puño, se detiene.</p>
+    </div>
+    <h2>Gestos</h2>
+    <div class="tarjeta">
+      <table>
+        <tr><td>✊ Puño</td><td>Detener</td></tr>
+        <tr><td>☝️ Índice arriba</td><td>Avanzar</td></tr>
+        <tr><td>👎 Pulgar abajo</td><td>Retroceder</td></tr>
+        <tr><td>🖐️ Mano abierta</td><td>Girar: mano a la <b>izquierda</b> o <b>derecha</b> de la imagen (centro = alto)</td></tr>
+        <tr><td>🤟 Te quiero</td><td>Rotar cabina: mano a la izquierda o derecha</td></tr>
+        <tr><td>👍 Pulgar arriba</td><td>Subir pala</td></tr>
+        <tr><td>✌️ Amor y paz</td><td>Bajar pala</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================================ WI-FI ================================ -->
+  <section id="vistaWifi" hidden>
+    <div class="tarjeta">
+      <div class="fila"><strong>Excavadora</strong><span class="chip" id="wifiEstado">…</span></div>
+      <p class="nota" id="wifiDetalle">—</p>
+    </div>
+
+    <h2>Configurar el Wi-Fi de la excavadora</h2>
+    <div class="tarjeta">
+      <ol>
+        <li>Si es la primera vez o cambiaste de lugar, borra la red guardada: escribe <code>R</code> en el Monitor Serie o une <b>D27 con GND</b> durante 5 s. El LED azul parpadea rápido.</li>
+        <li>En el Wi-Fi del teléfono conéctate a <b>EXCAVADORA-JUAN-743610</b> con la clave <code>Excavadora2026</code>
+          <button class="secundario" id="btnCopiarClave" style="margin-top:6px">Copiar clave</button></li>
+        <li>Si avisa “sin internet”, elige <b>mantener conexión</b>. Abre el portal:
+          <div style="margin-top:6px"><a class="secundario" href="http://192.168.4.1" target="_blank" rel="noopener">Abrir portal 192.168.4.1</a></div></li>
+        <li>Toca <b>Configure WiFi</b>, elige tu red (casa o hotspot del cel), escribe su clave y <b>Save</b>.</li>
+        <li>Vuelve a tu red con internet y regresa a esta app: la excavadora aparecerá <b>Conectada</b>.</li>
+      </ol>
+      <p class="nota">Mientras el teléfono está en la red de la excavadora no hay internet, así que esta app no puede mandar comandos hasta que regreses.</p>
+    </div>
+
+    <h2>LED azul de la placa</h2>
+    <div class="tarjeta">
+      <table>
+        <tr><td>Fijo</td><td>Wi-Fi y servidor conectados: lista para recibir órdenes</td></tr>
+        <tr><td>Parpadeo lento</td><td>Hay Wi-Fi pero no llega al servidor</td></tr>
+        <tr><td>Parpadeo rápido</td><td>Portal de configuración abierto</td></tr>
+        <tr><td>Muy lento</td><td>Sin Wi-Fi, reintentando</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <!-- =============================== AJUSTES =============================== -->
+  <section id="vistaAjustes" hidden>
+    <div class="tarjeta">
+      <label for="llave">Llave de control (X-API-Key)</label>
+      <input id="llave" type="password" autocomplete="off" placeholder="Pega aquí la llave">
+      <label for="vehiculo">Vehículo</label>
+      <select id="vehiculo"></select>
+      <label for="apiBase" id="lblApi" hidden>Servidor</label>
+      <input id="apiBase" hidden>
+    </div>
+    <div class="tarjeta">
+      <strong>Instalar como app</strong>
+      <p class="nota" id="instalarNota">En Android: menú ⋮ → <b>Instalar app</b>. En iPhone: Compartir → <b>Agregar a inicio</b>.</p>
+      <button class="secundario" id="btnInstalar" hidden>Instalar en este teléfono</button>
+    </div>
+    <div class="tarjeta">
+      <strong>Seguridad</strong>
+      <ul>
+        <li>Si la app pierde el servidor o cambias de pestaña, se manda <b>DETENER</b>.</li>
+        <li>La excavadora se frena sola si se cae su Wi-Fi o si un movimiento dura más de 20 s sin otra orden.</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button data-vista="vistaControl" aria-current="page"><span class="ico">🎮</span>Control</button>
+  <button data-vista="vistaVoz"><span class="ico">🎤</span>Voz</button>
+  <button data-vista="vistaGestos"><span class="ico">✋</span>Gestos</button>
+  <button data-vista="vistaWifi"><span class="ico">📶</span>Wi-Fi</button>
+  <button data-vista="vistaAjustes"><span class="ico">⚙️</span>Ajustes</button>
+</nav>
+
+<div class="aviso" id="aviso" hidden></div>
+
+<script>
+/* =====================================================================
+   Configuración y utilidades
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const DESDE_API = location.pathname.startsWith("/control");
+const API_BASE = (DESDE_API ? location.origin
+  : (new URLSearchParams(location.search).get("api") || leer("iot_api_base") || "https://100-63-187-92.sslip.io")).replace(/\/+$/, "");
+const WS_URL = id => `${API_BASE.replace(/^http/, "ws")}/ws/vehiculos/${id}`;
+
+const NOMBRES = {
+  AVANZAR: "AVANZANDO", RETROCEDER: "RETROCEDIENDO", GIRO_IZQUIERDA: "GIRANDO ◀", GIRO_DERECHA: "GIRANDO ▶",
+  ROTACION_IZQUIERDA: "CABINA ↺", ROTACION_DERECHA: "CABINA ↻", PALA_ARRIBA: "PALA ⤒", PALA_ABAJO: "PALA ⤓", DETENER: "DETENIDO",
+};
+
+function leer(k, def = null) { try { return localStorage.getItem(k) ?? def; } catch { return def; } }
+function guardar(k, v) { try { localStorage.setItem(k, v); } catch {} }
+const norm = s => (s || "").toUpperCase().replace(/\s+/g, "_");
+const sinAcentos = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+
+function aviso(texto) {
+  const a = $("aviso"); a.textContent = texto; a.hidden = false;
+  clearTimeout(a._t); a._t = setTimeout(() => a.hidden = true, 3500);
+}
+function vibrar(p) { if (navigator.vibrate) navigator.vibrate(p); }
+function chip(id, texto, clase) { const c = $(id); c.textContent = texto; c.className = "chip" + (clase ? " " + clase : ""); }
+
+/* =====================================================================
+   Navegación entre vistas
+   ===================================================================== */
+document.querySelectorAll("nav button").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll("nav button").forEach(x => x.removeAttribute("aria-current"));
+  b.setAttribute("aria-current", "page");
+  document.querySelectorAll("main section").forEach(s => s.hidden = s.id !== b.dataset.vista);
+  if (b.dataset.vista !== "vistaGestos") apagarCamara();
+  if (b.dataset.vista !== "vistaVoz") apagarVoz();
+  scrollTo(0, 0);
+}));
+
+/* =====================================================================
+   API REST
+   ===================================================================== */
+let vehiculo = Number(leer("iot_vehiculo", "1")), comandos = [], porNombre = {};
+
+$("llave").value = leer("iot_api_key", "");
+$("llave").addEventListener("change", e => { guardar("iot_api_key", e.target.value.trim()); revisarLlave(); });
+function revisarLlave() { $("chipLlave").hidden = !!$("llave").value.trim(); if (!$("llave").value.trim()) chip("chipLlave", "Sin llave: ve a Ajustes", "mal"); }
+if (!DESDE_API) {
+  $("lblApi").hidden = false; $("apiBase").hidden = false; $("apiBase").value = API_BASE;
+  $("apiBase").addEventListener("change", e => { guardar("iot_api_base", e.target.value.trim()); location.reload(); });
+}
+
+async function api(ruta, op = {}) {
+  const headers = { "Content-Type": "application/json" };
+  if (op.llave) headers["X-API-Key"] = $("llave").value.trim();
+  const r = await fetch(API_BASE + ruta, { method: op.method || "GET", headers, body: op.body ? JSON.stringify(op.body) : undefined });
+  const d = await r.json().catch(() => null);
+  if (!r.ok) {
+    const det = d && d.detail;
+    throw new Error(typeof det === "string" ? det : Array.isArray(det) ? det.map(x => x.msg).join("; ") : `HTTP ${r.status}`);
+  }
+  return d;
+}
+
+async function cargarVehiculos() {
+  try {
+    const lista = await api("/vehiculos");
+    $("vehiculo").innerHTML = "";
+    for (const v of lista) {
+      const o = document.createElement("option");
+      o.value = v.id_vehiculo; o.textContent = `${v.id_vehiculo} · ${v.nombre}`;
+      $("vehiculo").append(o);
+    }
+    if (!lista.some(v => v.id_vehiculo === vehiculo) && lista.length) vehiculo = lista[0].id_vehiculo;
+    $("vehiculo").value = vehiculo;
+  } catch (e) { aviso("No se pudo leer la lista de vehículos: " + e.message); }
+}
+$("vehiculo").addEventListener("change", e => {
+  vehiculo = Number(e.target.value); guardar("iot_vehiculo", vehiculo); cargarComandos(); conectarWS();
+});
+
+async function cargarComandos() {
+  try {
+    comandos = await api(`/vehiculos/${vehiculo}/comandos`);
+    porNombre = Object.fromEntries(comandos.map(c => [norm(c.nombre), c]));
+    document.querySelectorAll(".mando").forEach(b => {
+      const c = porNombre[b.dataset.cmd]; b.disabled = !c || !c.activo;
+    });
+  } catch (e) { aviso("No se pudo leer el catálogo de comandos: " + e.message); }
+}
+
+/* =====================================================================
+   Envío de comandos: el último gana (nunca se encolan órdenes viejas)
+   ===================================================================== */
+let enVuelo = false, pendiente = null;
+function enviar(nombre, origen = "APP") {
+  const c = porNombre[norm(nombre)];
+  if (!c || !c.activo) return;
+  if (!$("llave").value.trim()) { aviso("Falta la llave de control (Ajustes)."); return; }
+  pendiente = { c, origen }; bombear();
+}
+async function bombear() {
+  if (enVuelo || !pendiente) return;
+  const { c, origen } = pendiente; pendiente = null; enVuelo = true;
+  const t0 = performance.now();
+  try {
+    await api("/movimientos", { method: "POST", llave: true, body: { id_vehiculo: vehiculo, id_comando: c.id_comando, origen } });
+    chip("chipLatencia", `${Math.round(performance.now() - t0)} ms`);
+  } catch (e) { aviso("Error: " + e.message); }
+  finally { enVuelo = false; bombear(); }
+}
+
+/* =====================================================================
+   Motor de movimiento: toque = pulso, mantener = continuo
+   ===================================================================== */
+const mov = { activo: null, inicio: 0, timer: null };
+let pulsoMs = Number(leer("iot_pulso", "500"));
+
+function marcar(nombre) {
+  document.querySelectorAll(".mando").forEach(b => b.classList.toggle("activo", b.dataset.cmd === nombre && nombre !== "DETENER"));
+}
+function iniciar(nombre, origen) {
+  clearTimeout(mov.timer);
+  if (nombre === "DETENER") return detener(origen);
+  mov.activo = nombre; mov.inicio = performance.now();
+  marcar(nombre); vibrar(15);
+  enviar(nombre, origen);
+}
+function soltar(nombre) {           // al soltar: completa el pulso mínimo y detiene
+  if (mov.activo !== nombre) return;
+  const resta = Math.max(0, pulsoMs - (performance.now() - mov.inicio));
+  clearTimeout(mov.timer);
+  mov.timer = setTimeout(() => { if (mov.activo === nombre) detener(); }, resta);
+}
+function moverDurante(nombre, ms, origen) {   // voz: N segundos y alto (0 = hasta "alto")
+  iniciar(nombre, origen);
+  if (ms > 0) mov.timer = setTimeout(() => { if (mov.activo === nombre) detener(origen); }, ms);
+}
+function detener(origen = "APP") {
+  clearTimeout(mov.timer);
+  const habia = mov.activo; mov.activo = null; marcar(null);
+  if (habia !== null || origen !== "auto") { vibrar([30, 40, 30]); enviar("DETENER", origen === "auto" ? "APP" : origen); }
+}
+
+// Botones (pointer events: sirven igual con dedo, mouse o lápiz)
+document.querySelectorAll(".mando").forEach(b => {
+  const cmd = b.dataset.cmd;
+  b.addEventListener("pointerdown", e => { e.preventDefault(); b.setPointerCapture(e.pointerId); iniciar(cmd, "APP"); });
+  for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) b.addEventListener(ev, () => soltar(cmd));
+  b.addEventListener("contextmenu", e => e.preventDefault());
+});
+$("btnStop").addEventListener("click", () => detener("APP"));
+
+// Teclado
+const TECLAS = { w: "AVANZAR", arrowup: "AVANZAR", s: "RETROCEDER", arrowdown: "RETROCEDER", a: "GIRO_IZQUIERDA", arrowleft: "GIRO_IZQUIERDA",
+  d: "GIRO_DERECHA", arrowright: "GIRO_DERECHA", q: "ROTACION_IZQUIERDA", e: "ROTACION_DERECHA", r: "PALA_ARRIBA", f: "PALA_ABAJO" };
+addEventListener("keydown", e => {
+  if (e.target.matches("input, select")) return;
+  if (e.key === " ") { e.preventDefault(); return detener("APP"); }
+  const cmd = TECLAS[e.key.toLowerCase()];
+  if (cmd && !e.repeat) { e.preventDefault(); iniciar(cmd, "APP"); }
+});
+addEventListener("keyup", e => { const cmd = TECLAS[e.key.toLowerCase()]; if (cmd) soltar(cmd); });
+
+// Si la app se oculta (cambio de app, pantalla apagada) se detiene
+document.addEventListener("visibilitychange", () => { if (document.hidden) { apagarCamara(); apagarVoz(); if (mov.activo) detener(); } });
+
+// Selectores de duración
+function segmentos(id, valor, alCambiar) {
+  const botones = [...$(id).querySelectorAll("button")];
+  const pintar = v => botones.forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.ms) === v)));
+  botones.forEach(b => b.addEventListener("click", () => { const v = Number(b.dataset.ms); pintar(v); alCambiar(v); }));
+  pintar(valor);
+}
+segmentos("segPulso", pulsoMs, v => { pulsoMs = v; guardar("iot_pulso", v); });
+
+/* =====================================================================
+   WebSocket: estado en vivo de la excavadora
+   ===================================================================== */
+let ws = null, reintento = null;
+function conectarWS() {
+  clearTimeout(reintento);
+  if (ws) { ws.onclose = null; ws.close(); }
+  chip("chipServidor", "Servidor: conectando…");
+  ws = new WebSocket(WS_URL(vehiculo));
+  ws.onopen = () => chip("chipServidor", "Servidor: en línea", "ok");
+  ws.onclose = () => {
+    chip("chipServidor", "Servidor: sin enlace", "mal");
+    if (mov.activo) detener();
+    reintento = setTimeout(conectarWS, 3000);
+  };
+  ws.onmessage = e => {
+    let m; try { m = JSON.parse(e.data); } catch { return; }
+    if (m.tipo === "estado_inicial") {
+      pintarExcavadora(m.estado && m.estado.conectado, m.estado && m.estado.fecha_actualizacion);
+      pintarComando(m.estado ? m.estado.comando : "DETENER", "último estado");
+    } else if (m.tipo === "movimiento") {
+      pintarComando(m.comando, m.origen);
+    } else if (m.tipo === "demo_movimiento") {
+      pintarComando(m.comando, `DEMO ${m.orden}/${m.total_movimientos}`);
+    } else if (["demo_fin", "demo_cancelada", "demo_error"].includes(m.tipo)) {
+      pintarComando("DETENER", "fin de DEMO");
+    } else if (m.tipo === "conexion") {
+      pintarExcavadora(m.conectado, m.timestamp);
+    }
+  };
+}
+function pintarComando(nombre, origen) {
+  const n = norm(nombre);
+  $("cmdActual").textContent = NOMBRES[n] || n.replaceAll("_", " ");
+  $("cmdActual").classList.toggle("alto", n === "DETENER");
+  $("cmdDetalle").textContent = `Confirmado por el servidor · ${origen} · ${new Date().toLocaleTimeString("es-MX", { hour12: false })}`;
+}
+function pintarExcavadora(conectado, fecha) {
+  const t = conectado ? "Conectada" : "Desconectada";
+  chip("chipExcavadora", "Excavadora: " + t, conectado ? "ok" : "mal");
+  chip("wifiEstado", t, conectado ? "ok" : "mal");
+  $("wifiDetalle").textContent = fecha ? `Último aviso del ESP32: ${new Date(fecha).toLocaleString("es-MX")}` : "Sin avisos registrados.";
+}
+
+/* =====================================================================
+   VOZ (Web Speech API, reconocimiento en español de México)
+   ===================================================================== */
+const Reconocedor = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, vozActiva = false, vozMs = Number(leer("iot_voz_ms", "1000"));
+segmentos("segVoz", vozMs, v => { vozMs = v; guardar("iot_voz_ms", v); });
+if (!Reconocedor) { $("vozSoporte").textContent = "Este navegador no tiene reconocimiento de voz. Usa Chrome en Android o Safari en iPhone."; $("btnVoz").disabled = true; }
+
+const NUMEROS = { un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10 };
+function interpretarVoz(frase) {
+  const limpio = sinAcentos(frase.toLowerCase()).replace(/[!¡?¿]|(?<!\d)[.,]|[.,](?!\d)/g, " ").trim();
+  const continuo = /\b(sin parar|continuo|sigue|hasta que)\b/.test(limpio);
+  const t = " " + limpio.replace(/\bsin parar\b/g, " ") + " ";
+  const hay = re => re.test(t);
+  // "para" solo cuenta como alto si se dice sola ("avanza para adelante" no es alto)
+  if (hay(/\b(alto|parate|parale|detente|deten|detener|stop|frena|frenar|quieto)\b/) || /^(para|parar|ya)$/.test(limpio)) return { cmd: "DETENER" };
+
+  let cmd = null;
+  const izq = hay(/\bizquierda\b/), der = hay(/\bderecha\b/);
+  if (hay(/\b(sube|subir|subela|levanta|levantar|arriba)\b/)) cmd = "PALA_ARRIBA";
+  else if (hay(/\b(baja|bajar|bajala|abajo)\b/)) cmd = "PALA_ABAJO";
+  else if (hay(/\b(cabina|torre|rota|rotar|rotacion|voltea)\b/) && (izq || der)) cmd = izq ? "ROTACION_IZQUIERDA" : "ROTACION_DERECHA";
+  else if (izq) cmd = "GIRO_IZQUIERDA";
+  else if (der) cmd = "GIRO_DERECHA";
+  else if (hay(/\b(atras|retrocede|retroceder|reversa|regresa)\b/)) cmd = "RETROCEDER";
+  else if (hay(/\b(avanza|avanzar|adelante|enfrente|camina)\b/)) cmd = "AVANZAR";
+  if (!cmd) return null;
+
+  let ms = vozMs;
+  if (continuo) ms = 0;
+  else if (hay(/\bmedio segundo\b/)) ms = 500;
+  else {
+    const m = t.match(/(\d+(?:[.,]\d+)?|un|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s*(segundos?|seg)\b/);
+    if (m) ms = Math.min(10, NUMEROS[m[1]] || parseFloat(m[1].replace(",", "."))) * 1000;
+  }
+  return { cmd, ms };
+}
+
+function encenderVoz() {
+  rec = new Reconocedor();
+  rec.lang = "es-MX"; rec.continuous = true; rec.interimResults = false; rec.maxAlternatives = 1;
+  rec.onresult = e => {
+    const frase = e.results[e.results.length - 1][0].transcript.trim();
+    $("vozOido").textContent = `“${frase}”`;
+    const orden = interpretarVoz(frase);
+    if (!orden) { $("vozAccion").textContent = "No entendí el comando."; return; }
+    if (orden.cmd === "DETENER") { detener("VOZ"); $("vozAccion").textContent = "→ DETENER"; return; }
+    moverDurante(orden.cmd, orden.ms, "VOZ");
+    $("vozAccion").textContent = `→ ${orden.cmd.replaceAll("_", " ")} ${orden.ms ? `(${orden.ms / 1000} s)` : "(hasta “alto”)"}`;
+  };
+  rec.onerror = e => { if (e.error === "not-allowed") { aviso("Permite el micrófono para usar la voz."); apagarVoz(); } };
+  rec.onend = () => { if (vozActiva) try { rec.start(); } catch {} };   // Chrome corta tras silencio: se reanuda
+  rec.start();
+  vozActiva = true; $("btnVoz").textContent = "🎤 Escuchando… (toca para apagar)"; $("btnVoz").classList.add("encendido");
+}
+function apagarVoz() {
+  if (!vozActiva) return;
+  vozActiva = false; try { rec.stop(); } catch {}
+  $("btnVoz").textContent = "🎤 Activar voz"; $("btnVoz").classList.remove("encendido");
+}
+$("btnVoz").addEventListener("click", () => vozActiva ? apagarVoz() : encenderVoz());
+
+/* =====================================================================
+   GESTOS (MediaPipe Gesture Recognizer, corre en el teléfono)
+   ===================================================================== */
+const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35";
+const MODELO = "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task";
+let reconocedor = null, flujo = null, camaraActiva = false, ultimoVideo = -1;
+const gesto = { candidato: null, cuenta: 0, enviado: null, sinMano: 0 };
+const ESTABLE = 5;   // cuadros iguales seguidos antes de mandar la orden
+
+function gestoAComando(nombre, x) {   // x ya en coordenadas de espejo (0 = izquierda de la pantalla)
+  const lado = x < 0.35 ? "IZQ" : x > 0.65 ? "DER" : "CENTRO";
+  switch (nombre) {
+    case "Closed_Fist": return "DETENER";
+    case "Pointing_Up": return "AVANZAR";
+    case "Thumb_Down":  return "RETROCEDER";
+    case "Thumb_Up":    return "PALA_ARRIBA";
+    case "Victory":     return "PALA_ABAJO";
+    case "Open_Palm":   return lado === "IZQ" ? "GIRO_IZQUIERDA" : lado === "DER" ? "GIRO_DERECHA" : "DETENER";
+    case "ILoveYou":    return lado === "IZQ" ? "ROTACION_IZQUIERDA" : lado === "DER" ? "ROTACION_DERECHA" : "DETENER";
+    default:            return null;
+  }
+}
+
+async function encenderCamara() {
+  $("cajaCamara").hidden = false; $("gestoLectura").textContent = "Cargando modelo…";
+  $("btnCamara").textContent = "📷 Apagar cámara"; $("btnCamara").classList.add("encendido");
+  camaraActiva = true;
+  try {
+    if (!reconocedor) {
+      const { FilesetResolver, GestureRecognizer } = await import(`${MP}/vision_bundle.mjs`);
+      const archivos = await FilesetResolver.forVisionTasks(`${MP}/wasm`);
+      reconocedor = await GestureRecognizer.createFromOptions(archivos, {
+        baseOptions: { modelAssetPath: MODELO, delegate: "GPU" }, runningMode: "VIDEO", numHands: 1,
+      });
+    }
+    flujo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: 640, height: 480 }, audio: false });
+    if (!camaraActiva) return apagarCamara();
+    $("video").srcObject = flujo; await $("video").play();
+    $("gestoLectura").textContent = "Muestra la mano";
+    requestAnimationFrame(cicloGestos);
+  } catch (e) {
+    aviso("No se pudo usar la cámara: " + e.message); apagarCamara();
+  }
+}
+function cicloGestos() {
+  if (!camaraActiva) return;
+  const v = $("video");
+  if (v.readyState >= 2 && v.currentTime !== ultimoVideo) {
+    ultimoVideo = v.currentTime;
+    const r = reconocedor.recognizeForVideo(v, performance.now());
+    let cmd = null, texto = "Sin mano";
+    if (r.gestures.length && r.landmarks.length) {
+      const g = r.gestures[0][0];
+      const x = 1 - r.landmarks[0][9].x;   // nudillo del dedo medio, en espejo
+      if (g.score >= 0.6) cmd = gestoAComando(g.categoryName, x);
+      texto = cmd ? `${g.categoryName.replace("_", " ")} → ${cmd.replaceAll("_", " ")}` : "Gesto no asignado";
+      gesto.sinMano = 0;
+    } else if (++gesto.sinMano > 8) {
+      cmd = "DETENER";                        // se perdió la mano: alto
+    }
+    $("gestoLectura").textContent = texto;
+    if (cmd) {
+      if (cmd === gesto.candidato) gesto.cuenta++; else { gesto.candidato = cmd; gesto.cuenta = 1; }
+      if (gesto.cuenta === ESTABLE && cmd !== gesto.enviado) {
+        gesto.enviado = cmd;
+        if (cmd === "DETENER") { if (mov.activo) detener("GESTO"); } else iniciar(cmd, "GESTO");
+      }
+    }
+  }
+  requestAnimationFrame(cicloGestos);
+}
+function apagarCamara() {
+  if (!camaraActiva && !flujo) return;
+  camaraActiva = false;
+  if (flujo) { flujo.getTracks().forEach(t => t.stop()); flujo = null; }
+  $("video").srcObject = null; $("cajaCamara").hidden = true;
+  $("btnCamara").textContent = "📷 Activar cámara"; $("btnCamara").classList.remove("encendido");
+  if (gesto.enviado && gesto.enviado !== "DETENER" && mov.activo) detener("GESTO");
+  Object.assign(gesto, { candidato: null, cuenta: 0, enviado: null, sinMano: 0 });
+}
+$("btnCamara").addEventListener("click", () => camaraActiva ? apagarCamara() : encenderCamara());
+
+/* =====================================================================
+   Wi-Fi, instalación y arranque
+   ===================================================================== */
+$("btnCopiarClave").addEventListener("click", async () => {
+  try { await navigator.clipboard.writeText("Excavadora2026"); aviso("Clave copiada."); } catch { aviso("Clave: Excavadora2026"); }
+});
+
+let solicitudInstalar = null;
+addEventListener("beforeinstallprompt", e => { e.preventDefault(); solicitudInstalar = e; $("btnInstalar").hidden = false; });
+$("btnInstalar").addEventListener("click", async () => {
+  if (!solicitudInstalar) return;
+  solicitudInstalar.prompt(); await solicitudInstalar.userChoice; solicitudInstalar = null; $("btnInstalar").hidden = true;
+});
+addEventListener("appinstalled", () => aviso("App instalada."));
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+
+(async function arrancar() {
+  revisarLlave();
+  await cargarVehiculos();
+  await cargarComandos();
+  conectarWS();
+})();
+</script>
+</body>
+</html>
