@@ -362,6 +362,12 @@ const INTERRUPTOR = "ENCENDER_APAGAR", PULSO_INTERRUPTOR = 400;   // botón de u
 const ETIQUETA = Object.fromEntries(CMDS.map(([c, , t]) => [c, t.toUpperCase()]));
 ETIQUETA.DETENER = "DETENIDO";
 
+// Liga privada con la llave (#k=…): se guarda en el teléfono y se borra de la barra de direcciones.
+// El fragmento # nunca se manda al servidor.
+if (location.hash.startsWith("#k=")) {
+  guardar("iot_api_key", decodeURIComponent(location.hash.slice(3)));
+  history.replaceState(null, "", location.pathname + location.search);
+}
 const vehiculo = Number(new URLSearchParams(location.search).get("v") || leer("iot_vehiculo", "1"));
 let pulso = Number(leer("pulso", "500")), modo = leer("modo", "sticks");
 let ws = null, autorizado = !NUBE, ultimaTele = 0, finHud = null;
