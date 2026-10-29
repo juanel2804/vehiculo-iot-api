@@ -1,6 +1,6 @@
 // Service worker de la app "Excavadora de Juan": permite instalarla y abrirla rápido.
 // Solo guarda la propia página; la API y el WebSocket siempre van a la red.
-const CACHE = "excavadora-v4";
+const CACHE = "excavadora-v5";
 const ARCHIVOS = ["./", "./index.html", "./app.html", "./manifest.webmanifest", "./icono-192.png", "./icono-512.png"];
 const ALCANCE = new URL("./", self.location).pathname;
 

@@ -111,7 +111,9 @@ nav button[hidden] { display:none; }
 .btn:active { transform:scale(.96); }
 .btn.activo { border-color:var(--cian); color:#fff; background:linear-gradient(160deg, rgba(62,230,255,.35), rgba(167,139,250,.22));
   box-shadow:0 0 0 1px var(--cian), 0 0 24px rgba(62,230,255,.55); }
-.btn.aux2 { border-color:rgba(255,181,71,.35); }
+.btn.aux2 { border-color:rgba(255,255,255,.08); color:var(--suave); }
+.btn.poder { border-color:rgba(61,255,168,.5); color:var(--verde); box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 0 18px rgba(61,255,168,.18); }
+.btn.poder:active { background:rgba(61,255,168,.2); }
 .btn:disabled { opacity:.35; }
 .rejilla { display:grid; gap:10px; margin-top:12px; grid-template-columns:repeat(3, 1fr); }
 .botonera { display:grid; gap:12px; margin-top:12px; grid-template-columns:1fr; }
@@ -256,7 +258,7 @@ ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(-
           <tr><td>Alto</td><td>“alto”, “detente”, “stop”, “frena”</td></tr>
           <tr><td>Tracción</td><td>“avanza”, “atrás”, “gira a la izquierda”</td></tr>
           <tr><td>Cabina / pala</td><td>“cabina derecha”, “sube la pala”, “baja”</td></tr>
-          <tr><td>Funciones</td><td>“función 9” … “función 12”</td></tr>
+          <tr><td>Control</td><td>“prende el control”, “apaga el control”</td></tr>
           <tr><td>Tiempo</td><td>“… 3 segundos”, “medio segundo”, “sin parar”</td></tr>
           <tr><td>Rutinas</td><td>“zanja”, “recoge”, “descarga”, “saluda”, “baila”</td></tr>
         </table>
@@ -354,8 +356,9 @@ const sinAcentos = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
 const CMDS = [
   ["AVANZAR", "▲", "Avanzar"], ["RETROCEDER", "▼", "Reversa"], ["GIRO_IZQUIERDA", "◀", "Girar izq."], ["GIRO_DERECHA", "▶", "Girar der."],
   ["ROTACION_IZQUIERDA", "↺", "Cabina izq."], ["ROTACION_DERECHA", "↻", "Cabina der."], ["PALA_ARRIBA", "⤒", "Subir pala"], ["PALA_ABAJO", "⤓", "Bajar pala"],
-  ["COMANDO_9", "⚙", "Función 9"], ["COMANDO_10", "⚙", "Función 10"], ["COMANDO_11", "⚙", "Función 11"], ["COMANDO_12", "⚙", "Función 12"],
+  ["ENCENDER_APAGAR", "⏻", "Prender / apagar"], ["AUX_1", "?", "Aux 1 · Q5"], ["AUX_2", "?", "Aux 2 · Q6"], ["AUX_3", "?", "Aux 3 · Q7"],
 ];
+const INTERRUPTOR = "ENCENDER_APAGAR", PULSO_INTERRUPTOR = 400;   // botón de un toque, nunca continuo
 const ETIQUETA = Object.fromEntries(CMDS.map(([c, , t]) => [c, t.toUpperCase()]));
 ETIQUETA.DETENER = "DETENIDO";
 
@@ -449,6 +452,7 @@ let plan = null;
 function marcar(c) { document.querySelectorAll(".btn[data-c]").forEach(b => b.classList.toggle("activo", b.dataset.c === c)); }
 function pararRenovar() { clearInterval(mov.renovar); mov.renovar = null; }
 function sostener(c) {
+  if (c === INTERRUPTOR) { vibrar([20, 30, 20]); mandar(c, PULSO_INTERRUPTOR); return; }
   cancelarPlan(); pararRenovar();
   mov.c = c; mov.t0 = performance.now(); marcar(c); vibrar(12);
   mandar(c, 0); mov.renovar = setInterval(() => mandar(c, 0), RENOVAR_MS);
@@ -474,8 +478,9 @@ function crearBoton(c, ico, txt, i, extra = "") {
   b.addEventListener("contextmenu", e => e.preventDefault());
   return b;
 }
-CMDS.forEach(([c, ico, txt], i) => $("rejilla").append(crearBoton(c, ico, txt, i + 1, i >= 8 ? "aux2" : "")));
-CMDS.slice(8).forEach(([c, ico, txt], i) => $("auxSticks").append(crearBoton(c, ico, txt, i + 9, "aux2")));
+const claseBoton = c => c === INTERRUPTOR ? "poder" : c.startsWith("AUX_") ? "aux2" : "";
+CMDS.forEach(([c, ico, txt], i) => $("rejilla").append(crearBoton(c, ico, txt, i + 1, claseBoton(c))));
+CMDS.slice(8).forEach(([c, ico, txt], i) => $("auxSticks").append(crearBoton(c, ico, txt, i + 9, claseBoton(c))));
 
 /* --- joysticks --- */
 let dueño = null;
@@ -514,7 +519,7 @@ const sticks = [crearStick($("stickIzq")), crearStick($("stickDer"))];
 /* --- teclado --- */
 const TECLAS = { w: "AVANZAR", arrowup: "AVANZAR", s: "RETROCEDER", arrowdown: "RETROCEDER", a: "GIRO_IZQUIERDA", arrowleft: "GIRO_IZQUIERDA",
   d: "GIRO_DERECHA", arrowright: "GIRO_DERECHA", q: "ROTACION_IZQUIERDA", e: "ROTACION_DERECHA", r: "PALA_ARRIBA", f: "PALA_ABAJO",
-  "1": "COMANDO_9", "2": "COMANDO_10", "3": "COMANDO_11", "4": "COMANDO_12" };
+  "p": "ENCENDER_APAGAR", "1": "AUX_1", "2": "AUX_2", "3": "AUX_3" };
 addEventListener("keydown", e => {
   if (e.target.matches("input")) return;
   if (e.key === " ") { e.preventDefault(); return detenerTodo(); }
@@ -595,9 +600,10 @@ function interpretar(frase) {
   const t = " " + limpio.replace(/\bsin parar\b/g, " ") + " ", hay = re => re.test(t);
   if (hay(/\b(alto|parate|parale|detente|deten|detener|stop|frena|quieto)\b/) || /^(para|parar|ya)$/.test(limpio)) return { c: "DETENER" };
   let c = null;
-  const f = t.match(/\b(funcion|comando|boton)\s+(9|10|11|12|nueve|diez|once|doce)\b/);
+  const aux = t.match(/\b(auxiliar|aux)\s+(1|2|3|uno|dos|tres)\b/);
   const izq = hay(/\bizquierda\b/), der = hay(/\bderecha\b/);
-  if (f) c = `COMANDO_${NUM[f[2]] || f[2]}`;
+  if (hay(/\b(prende|prender|enciende|encender|apaga|apagar)\b/)) return { c: INTERRUPTOR, ms: PULSO_INTERRUPTOR };
+  if (aux) c = `AUX_${NUM[aux[2]] || aux[2]}`;
   else if (hay(/\b(sube|subir|subela|levanta|arriba)\b/)) c = "PALA_ARRIBA";
   else if (hay(/\b(baja|bajar|bajala|abajo)\b/)) c = "PALA_ABAJO";
   else if (hay(/\b(cabina|torre|rota|rotar|voltea)\b/) && (izq || der)) c = izq ? "ROTACION_IZQUIERDA" : "ROTACION_DERECHA";
