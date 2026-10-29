@@ -4,321 +4,745 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title>Excavadora de Juan</title>
+<meta name="description" content="Control de la excavadora IoT: joysticks, 12 botones, IA, voz y gestos.">
 <meta name="theme-color" content="#070a12">
+<meta name="color-scheme" content="dark">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icono-192.png">
+<link rel="apple-touch-icon" href="icono-192.png">
 <style>
-  :root { --fondo:#070a12; --vidrio:rgba(255,255,255,.06); --borde:rgba(255,255,255,.13); --texto:#eaf2ff; --suave:#8c9ab3;
-          --cian:#3ee6ff; --violeta:#a78bfa; --rojo:#ff4d5e; --verde:#3dffa8; --ambar:#ffb547; }
-  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
-  html, body { margin:0; height:100%; overflow:hidden; color:var(--texto); font:15px/1.3 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--fondo); }
-  body { background:
-      radial-gradient(60vw 60vh at 0% 0%, rgba(62,230,255,.16), transparent 60%),
-      radial-gradient(60vw 60vh at 100% 100%, rgba(167,139,250,.18), transparent 60%), var(--fondo); }
-  body::before { content:""; position:fixed; inset:0; pointer-events:none;
-    background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
-    background-size:32px 32px; }
-  button { font:inherit; color:inherit; }
-  .vidrio { background:var(--vidrio); border:1px solid var(--borde); border-radius:20px;
-    backdrop-filter:blur(16px) saturate(140%); -webkit-backdrop-filter:blur(16px) saturate(140%);
-    box-shadow:0 12px 40px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.08); }
+:root { --fondo:#070a12; --vidrio:rgba(255,255,255,.06); --vidrio2:rgba(255,255,255,.1); --borde:rgba(255,255,255,.13);
+  --texto:#eaf2ff; --suave:#8c9ab3; --cian:#3ee6ff; --violeta:#a78bfa; --rojo:#ff4d5e; --verde:#3dffa8; --ambar:#ffb547;
+  --nav:64px; --cab:50px; }
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+[hidden] { display:none !important; }
+html, body { margin:0; height:100%; color:var(--texto); font:15px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; background:var(--fondo); }
+body { overflow:hidden; background:
+  radial-gradient(70vw 60vh at 0% 0%, rgba(62,230,255,.15), transparent 60%),
+  radial-gradient(70vw 60vh at 100% 100%, rgba(167,139,250,.17), transparent 60%), var(--fondo); }
+body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:-1;
+  background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+  background-size:32px 32px; }
+button, input, select { font:inherit; color:inherit; }
+.sinsel { user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+.vidrio { background:var(--vidrio); border:1px solid var(--borde); border-radius:18px;
+  backdrop-filter:blur(16px) saturate(140%); -webkit-backdrop-filter:blur(16px) saturate(140%);
+  box-shadow:0 10px 34px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.08); }
 
-  /* ---------- distribución: horizontal = gamepad ---------- */
-  .consola { position:relative; height:100%; display:grid; gap:14px; align-items:center;
-    grid-template-columns:1fr minmax(220px,300px) 1fr;
-    padding:max(12px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left)); }
-  .lado { display:flex; flex-direction:column; align-items:center; gap:10px; }
-  .lado .titulo { font-size:11px; letter-spacing:3px; color:var(--suave); font-weight:700; }
+/* ================= estructura ================= */
+header { position:fixed; top:0; left:0; right:0; height:calc(var(--cab) + env(safe-area-inset-top)); z-index:20;
+  padding:env(safe-area-inset-top) 12px 0; display:flex; align-items:center; gap:8px;
+  background:linear-gradient(180deg, rgba(7,10,18,.9), rgba(7,10,18,.6)); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--borde); }
+.marca { font-weight:900; letter-spacing:2.5px; font-size:13px; white-space:nowrap; }
+.marca span { color:var(--cian); }
+.leds { display:flex; gap:6px; margin-left:auto; overflow:hidden; }
+.led { display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--suave); padding:4px 8px; border-radius:999px;
+  border:1px solid var(--borde); background:var(--vidrio); white-space:nowrap; }
+.led i { width:7px; height:7px; border-radius:50%; background:var(--suave); flex:none; }
+.led.ok { color:var(--texto); } .led.ok i { background:var(--verde); box-shadow:0 0 8px var(--verde); }
+.led.mal i { background:var(--rojo); box-shadow:0 0 8px var(--rojo); }
+.icono { flex:none; width:36px; height:36px; border-radius:12px; border:1px solid var(--borde); background:var(--vidrio); cursor:pointer; font-size:16px; }
 
-  /* ---------- joystick ---------- */
-  .stick { --t:min(40vh,30vw,260px); position:relative; width:var(--t); height:var(--t); border-radius:50%; touch-action:none;
-    background:radial-gradient(circle at 50% 50%, rgba(62,230,255,.08), rgba(255,255,255,.03) 60%, rgba(255,255,255,.06));
-    border:1px solid var(--borde); box-shadow:inset 0 0 40px rgba(0,0,0,.6), 0 0 0 6px rgba(255,255,255,.02); }
-  .stick::before { content:""; position:absolute; inset:32%; border-radius:50%; border:1px dashed rgba(255,255,255,.18); }
-  .stick .flecha { position:absolute; font-size:13px; font-weight:800; letter-spacing:1px; color:var(--suave); }
-  .stick .flecha.on { color:var(--cian); text-shadow:0 0 12px var(--cian); }
-  .f-ar { top:7%; left:50%; transform:translateX(-50%); } .f-ab { bottom:7%; left:50%; transform:translateX(-50%); }
-  .f-iz { left:6%; top:50%; transform:translateY(-50%); } .f-de { right:6%; top:50%; transform:translateY(-50%); }
-  .perilla { position:absolute; left:50%; top:50%; width:36%; height:36%; margin:-18% 0 0 -18%; border-radius:50%; pointer-events:none;
-    background:radial-gradient(circle at 35% 30%, #ffffff, #9fe9ff 30%, #2aa7c7 70%, #0d4a5c);
-    box-shadow:0 8px 24px rgba(0,0,0,.6), 0 0 22px rgba(62,230,255,.35); }
-  .stick.activo { border-color:var(--cian); box-shadow:inset 0 0 40px rgba(0,0,0,.6), 0 0 30px rgba(62,230,255,.35); }
+main { position:fixed; top:calc(var(--cab) + env(safe-area-inset-top)); left:0; right:0; bottom:calc(var(--nav) + env(safe-area-inset-bottom));
+  overflow:auto; padding:12px max(12px, env(safe-area-inset-right)) 12px max(12px, env(safe-area-inset-left)); }
+section[hidden] { display:none !important; }
+nav { position:fixed; left:0; right:0; bottom:0; z-index:20; height:calc(var(--nav) + env(safe-area-inset-bottom));
+  padding-bottom:env(safe-area-inset-bottom); display:grid; grid-auto-flow:column; grid-auto-columns:1fr;
+  background:rgba(10,13,22,.88); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-top:1px solid var(--borde); }
+nav button { border:0; background:transparent; color:var(--suave); font-size:11px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
+nav button b { font-size:20px; font-weight:400; }
+nav button[aria-current="page"] { color:var(--texto); font-weight:700; }
+nav button[aria-current="page"] b { filter:drop-shadow(0 0 8px var(--cian)); }
+nav button[hidden] { display:none; }
 
-  /* ---------- centro ---------- */
-  .centro { display:flex; flex-direction:column; gap:12px; align-items:stretch; }
-  .estado { padding:12px 14px; text-align:center; }
-  .leds { display:flex; justify-content:center; gap:6px; flex-wrap:wrap; }
-  .led { display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--suave); padding:3px 8px; border-radius:999px; border:1px solid var(--borde); }
-  .led i { width:7px; height:7px; border-radius:50%; background:var(--suave); }
-  .led.ok { color:var(--texto); } .led.ok i { background:var(--verde); box-shadow:0 0 8px var(--verde); }
-  .led.mal i { background:var(--rojo); box-shadow:0 0 8px var(--rojo); }
-  .cmd { font-size:24px; font-weight:900; letter-spacing:2px; margin:10px 0 2px; color:var(--rojo); text-shadow:0 0 16px rgba(255,77,94,.4); }
-  .cmd.mueve { color:var(--cian); text-shadow:0 0 18px rgba(62,230,255,.55); }
-  .sub { font-size:12px; color:var(--suave); }
-  .stop { position:relative; align-self:center; width:min(26vh,140px); aspect-ratio:1; border-radius:50%; cursor:pointer; touch-action:manipulation;
-    border:2px solid rgba(255,255,255,.3); background:radial-gradient(circle at 35% 30%, #ff8592, #ff4d5e 45%, #a1122c);
-    font-weight:900; letter-spacing:3px; font-size:17px; color:#fff;
-    box-shadow:0 0 0 8px rgba(255,77,94,.12), 0 14px 36px rgba(255,77,94,.45), inset 0 2px 0 rgba(255,255,255,.4); }
-  .stop:active { transform:scale(.96); }
-  .segmentos { display:flex; padding:3px; gap:3px; border-radius:12px; background:rgba(0,0,0,.3); border:1px solid var(--borde); }
-  .segmentos button { flex:1; border:0; background:transparent; padding:7px 4px; border-radius:9px; color:var(--suave); font-size:13px; cursor:pointer; }
-  .segmentos button[aria-pressed="true"] { color:var(--texto); font-weight:800; background:linear-gradient(135deg,rgba(62,230,255,.3),rgba(167,139,250,.3)); box-shadow:inset 0 0 0 1px rgba(62,230,255,.45); }
-  .etq { font-size:10px; letter-spacing:2px; color:var(--suave); text-align:center; margin-bottom:4px; font-weight:700; }
-  .esquina { position:absolute; top:max(10px,env(safe-area-inset-top)); right:max(12px,env(safe-area-inset-right)); display:flex; gap:8px; }
-  .chico { border:1px solid var(--borde); background:var(--vidrio); border-radius:12px; padding:7px 10px; font-size:12px; cursor:pointer; }
-  a.chico { color:var(--texto); text-decoration:none; }
-  .panelLlave { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:5; width:min(90vw,340px); padding:16px;
-    display:flex; flex-direction:column; gap:10px; background:rgba(12,16,28,.92); }
-  .panelLlave[hidden] { display:none; }
-  .panelLlave input { font:inherit; color:var(--texto); background:rgba(0,0,0,.35); border:1px solid var(--borde); border-radius:12px;
-    padding:11px; user-select:text; -webkit-user-select:text; }
-  .marca { position:absolute; top:max(10px,env(safe-area-inset-top)); left:max(14px,env(safe-area-inset-left)); font-weight:900; letter-spacing:3px; font-size:12px; }
-  .marca span { color:var(--cian); }
+/* horizontal: navegación como riel a la izquierda */
+@media (orientation: landscape) and (max-height: 600px) {
+  :root { --cab:44px; }
+  nav { top:0; bottom:0; right:auto; width:calc(var(--nav) + env(safe-area-inset-left)); height:auto; grid-auto-flow:row; grid-auto-rows:1fr;
+    padding:calc(var(--cab) + 4px) 0 env(safe-area-inset-bottom) env(safe-area-inset-left); border-top:0; border-right:1px solid var(--borde); }
+  header { left:calc(var(--nav) + env(safe-area-inset-left)); }
+  main { left:calc(var(--nav) + env(safe-area-inset-left)); bottom:0; padding-bottom:max(10px, env(safe-area-inset-bottom)); }
+}
 
-  /* ---------- vertical: sticks abajo, uno junto al otro ---------- */
-  @media (orientation: portrait) {
-    .consola { grid-template-columns:1fr 1fr; grid-template-rows:auto 1fr auto; padding-top:max(52px,env(safe-area-inset-top)); }
-    .centro { grid-column:1 / -1; grid-row:1; }
-    .lado.izq { grid-column:1; grid-row:2; } .lado.der { grid-column:2; grid-row:2; }
-    .stick { --t:min(44vw,34vh); }
-    .stop { width:min(24vw,110px); }
-  }
-  .paro { position:fixed; inset:0; display:grid; place-items:center; background:rgba(255,77,94,.25); font-size:34px; font-weight:900; letter-spacing:6px; pointer-events:none; }
-  .paro[hidden] { display:none; }
+/* ================= control ================= */
+.hud { display:flex; align-items:center; gap:12px; padding:10px 14px; flex-wrap:wrap; }
+.hud .cmd { font-size:22px; font-weight:900; letter-spacing:1.5px; color:var(--rojo); text-shadow:0 0 16px rgba(255,77,94,.4); min-width:150px; }
+.hud .cmd.mueve { color:var(--cian); text-shadow:0 0 16px rgba(62,230,255,.5); }
+.hud .sub { font-size:12px; color:var(--suave); }
+.hud .der { margin-left:auto; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.seg { display:inline-flex; padding:3px; gap:3px; border-radius:12px; background:rgba(0,0,0,.3); border:1px solid var(--borde); }
+.seg button { border:0; background:transparent; padding:6px 10px; border-radius:9px; color:var(--suave); font-size:13px; cursor:pointer; white-space:nowrap; }
+.seg button[aria-pressed="true"] { color:var(--texto); font-weight:800; background:linear-gradient(135deg,rgba(62,230,255,.3),rgba(167,139,250,.3)); box-shadow:inset 0 0 0 1px rgba(62,230,255,.45); }
+
+.pad { display:grid; gap:12px; align-items:center; margin-top:12px; grid-template-columns:1fr auto 1fr; }
+.lado { display:flex; flex-direction:column; align-items:center; gap:6px; }
+.lado small { font-size:10px; letter-spacing:2.5px; color:var(--suave); font-weight:800; }
+.stick { --t:min(52vh, 30vw, 250px); position:relative; width:var(--t); height:var(--t); border-radius:50%; touch-action:none;
+  background:radial-gradient(circle, rgba(62,230,255,.08), rgba(255,255,255,.03) 60%, rgba(255,255,255,.06)); border:1px solid var(--borde);
+  box-shadow:inset 0 0 40px rgba(0,0,0,.6); }
+.stick::before { content:""; position:absolute; inset:32%; border-radius:50%; border:1px dashed rgba(255,255,255,.18); }
+.stick .fl { position:absolute; font-size:14px; font-weight:900; color:var(--suave); pointer-events:none; }
+.stick .fl.on { color:var(--cian); text-shadow:0 0 12px var(--cian); }
+.f-ar { top:6%; left:50%; transform:translateX(-50%); } .f-ab { bottom:6%; left:50%; transform:translateX(-50%); }
+.f-iz { left:6%; top:50%; transform:translateY(-50%); } .f-de { right:6%; top:50%; transform:translateY(-50%); }
+.perilla { position:absolute; left:50%; top:50%; width:36%; height:36%; margin:-18% 0 0 -18%; border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle at 35% 30%, #fff, #9fe9ff 30%, #2aa7c7 70%, #0d4a5c); box-shadow:0 8px 24px rgba(0,0,0,.6), 0 0 22px rgba(62,230,255,.35); }
+.stick.activo { border-color:var(--cian); box-shadow:inset 0 0 40px rgba(0,0,0,.6), 0 0 30px rgba(62,230,255,.35); }
+.centro { display:flex; flex-direction:column; align-items:center; gap:12px; }
+.aux { display:grid; grid-template-columns:1fr 1fr; gap:8px; width:min(30vw, 200px); }
+
+.stop { width:min(24vh, 120px); aspect-ratio:1; border-radius:50%; cursor:pointer; touch-action:manipulation;
+  border:2px solid rgba(255,255,255,.3); background:radial-gradient(circle at 35% 30%, #ff8592, #ff4d5e 45%, #a1122c);
+  font-weight:900; letter-spacing:2px; font-size:16px; color:#fff;
+  box-shadow:0 0 0 7px rgba(255,77,94,.12), 0 12px 32px rgba(255,77,94,.45), inset 0 2px 0 rgba(255,255,255,.4); }
+.stop:active { transform:scale(.95); }
+.stop.barra { width:100%; aspect-ratio:auto; min-height:56px; border-radius:16px; }
+
+.btn { position:relative; touch-action:none; min-height:64px; border-radius:16px; cursor:pointer; padding:8px 6px;
+  background:linear-gradient(160deg, rgba(255,255,255,.1), rgba(255,255,255,.03)); border:1px solid var(--borde);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 6px 18px rgba(0,0,0,.35); font-weight:700; font-size:12.5px; letter-spacing:.3px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; transition:transform .06s, box-shadow .12s, border-color .12s; }
+.btn b { font-size:22px; line-height:1; }
+.btn .num { position:absolute; top:6px; left:8px; font-size:10px; color:var(--suave); font-weight:800; }
+.btn:active { transform:scale(.96); }
+.btn.activo { border-color:var(--cian); color:#fff; background:linear-gradient(160deg, rgba(62,230,255,.35), rgba(167,139,250,.22));
+  box-shadow:0 0 0 1px var(--cian), 0 0 24px rgba(62,230,255,.55); }
+.btn.aux2 { border-color:rgba(255,181,71,.35); }
+.btn:disabled { opacity:.35; }
+.rejilla { display:grid; gap:10px; margin-top:12px; grid-template-columns:repeat(3, 1fr); }
+.botonera { display:grid; gap:12px; margin-top:12px; grid-template-columns:1fr; }
+@media (orientation: landscape) {
+  .rejilla { grid-template-columns:repeat(6, 1fr); }
+  .rejilla .btn { min-height:min(27vh, 130px); }
+  .botonera { grid-template-columns:1fr 130px; align-items:stretch; }
+  .botonera .stop.barra { min-height:100%; border-radius:20px; }
+}
+@media (orientation: portrait) {
+  .pad { grid-template-columns:1fr 1fr; }
+  .pad .centro { grid-column:1 / -1; grid-row:1; flex-direction:row; justify-content:center; }
+  .stick { --t:min(44vw, 36vh); }
+  .aux { width:auto; flex:1; max-width:240px; }
+  .stop { width:min(26vw, 110px); }
+}
+
+/* ================= IA, gestos, ajustes ================= */
+.tarjeta { padding:14px; margin-bottom:12px; }
+.fila { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.nota { font-size:13px; color:var(--suave); margin:6px 0 0; }
+.chat { display:flex; gap:8px; margin-top:10px; }
+.chat input, .campo { flex:1; width:100%; background:rgba(0,0,0,.3); border:1px solid var(--borde); border-radius:12px; padding:12px; outline:none; }
+.chat input:focus, .campo:focus { border-color:var(--cian); box-shadow:0 0 0 3px rgba(62,230,255,.15); }
+.redondo { width:48px; min-width:48px; height:48px; border-radius:14px; border:1px solid var(--borde); cursor:pointer; font-size:19px; background:var(--vidrio2); }
+.redondo.on { border-color:var(--cian); background:rgba(62,230,255,.2); box-shadow:0 0 20px rgba(62,230,255,.45); }
+.redondo.primario { border:0; background:linear-gradient(135deg, var(--cian), var(--violeta)); color:#04121a; font-weight:900; }
+.chips { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+.chips button { border:1px solid var(--borde); background:var(--vidrio); border-radius:999px; padding:8px 12px; font-size:13px; cursor:pointer; }
+.chips button:active { border-color:var(--cian); }
+.respuesta { margin-top:12px; padding:12px; border-radius:14px; background:rgba(0,0,0,.25); border:1px solid var(--borde); }
+.respuesta .quien { font-size:10px; letter-spacing:2px; font-weight:800; color:var(--violeta); }
+.pasos { list-style:none; margin:10px 0 0; padding:0; display:grid; gap:6px; }
+.pasos li { display:flex; justify-content:space-between; padding:8px 10px; border-radius:10px; background:rgba(255,255,255,.04); border:1px solid var(--borde); font-size:14px; }
+.pasos li.hecho { opacity:.45; } .pasos li.actual { border-color:var(--cian); box-shadow:0 0 14px rgba(62,230,255,.35); }
+.pasos li span:last-child { color:var(--suave); }
+.grande { width:100%; min-height:54px; border-radius:16px; border:1px solid var(--borde); background:var(--vidrio2); font-weight:800; cursor:pointer; }
+.grande.on { border-color:var(--cian); background:rgba(62,230,255,.2); }
+.camara { position:relative; margin-top:10px; border-radius:16px; overflow:hidden; background:#000; aspect-ratio:4/3; max-height:60vh; border:1px solid var(--borde); }
+.camara video { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:block; }
+.camara .zonas { position:absolute; inset:0; display:grid; grid-template-columns:35% 30% 35%; pointer-events:none; }
+.camara .zonas div { border-right:1px dashed rgba(62,230,255,.4); } .camara .zonas div:last-child { border-right:0; }
+.camara .lectura { position:absolute; left:10px; right:10px; bottom:10px; background:rgba(7,10,18,.7); padding:8px 12px; border-radius:12px; font-weight:700; }
+table { width:100%; border-collapse:collapse; font-size:14px; }
+td { padding:7px 4px; border-bottom:1px solid var(--borde); vertical-align:top; } tr:last-child td { border-bottom:0; }
+td:first-child { white-space:nowrap; width:1%; padding-right:12px; } td + td { color:var(--suave); }
+.dosCol { display:grid; gap:12px; grid-template-columns:1fr; }
+@media (min-width: 760px) { .dosCol { grid-template-columns:1fr 1fr; } }
+label.sw { display:flex; justify-content:space-between; align-items:center; gap:10px; padding:4px 0; }
+label.sw input { appearance:none; -webkit-appearance:none; width:46px; height:26px; border-radius:999px; background:rgba(255,255,255,.12); position:relative; cursor:pointer; flex:none; margin:0; }
+label.sw input::after { content:""; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:left .15s; }
+label.sw input:checked { background:linear-gradient(135deg, var(--cian), var(--violeta)); } label.sw input:checked::after { left:23px; }
+.nivel { position:relative; width:110px; height:110px; border-radius:50%; margin:10px auto 0; border:1px solid var(--borde); }
+.nivel::before { content:""; position:absolute; inset:36%; border-radius:50%; border:1px dashed rgba(255,255,255,.25); }
+.nivel i { position:absolute; left:50%; top:50%; width:20px; height:20px; margin:-10px 0 0 -10px; border-radius:50%; background:var(--cian); box-shadow:0 0 14px var(--cian); }
+code { color:var(--cian); background:rgba(0,0,0,.35); border:1px solid var(--borde); border-radius:6px; padding:1px 6px; }
+ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(--suave); } b { color:var(--texto); }
+.aviso { position:fixed; left:50%; transform:translateX(-50%); top:calc(var(--cab) + env(safe-area-inset-top) + 10px); z-index:30;
+  width:min(92vw, 460px); padding:12px 14px; font-size:14px; background:rgba(12,16,28,.95); }
+.aviso[hidden], .paro[hidden] { display:none; }
+.paro { position:fixed; inset:0; z-index:40; display:grid; place-items:center; background:rgba(255,77,94,.28); font-size:34px; font-weight:900; letter-spacing:6px; pointer-events:none; }
 </style>
 </head>
 <body>
-<div class="marca">EXCAVADORA <span>JUAN</span></div>
-<div class="esquina">
-  <a class="chico" id="btnMas" href="app.html" hidden>✨ IA · Gestos · Wi-Fi</a>
-  <button class="chico" id="btnLlave" title="Llave de control" hidden>🔑</button>
-  <button class="chico" id="btnPantalla" title="Pantalla completa">⛶</button>
-</div>
-<div class="panelLlave vidrio" id="panelLlave" hidden>
-  <b>Llave de control</b>
-  <input id="llave" type="password" placeholder="X-API-Key" autocomplete="off">
-  <button class="chico" id="btnGuardarLlave">Conectar</button>
-</div>
 
-<div class="consola">
-  <div class="lado izq">
-    <div class="titulo">TRACCIÓN</div>
-    <div class="stick" id="stickIzq">
-      <span class="flecha f-ar" data-c="AVANZAR">▲</span><span class="flecha f-ab" data-c="RETROCEDER">▼</span>
-      <span class="flecha f-iz" data-c="GIRO_IZQUIERDA">◀</span><span class="flecha f-de" data-c="GIRO_DERECHA">▶</span>
-      <div class="perilla"></div>
-    </div>
+<header>
+  <div class="marca">EXCAVADORA <span>JUAN</span></div>
+  <div class="leds">
+    <span class="led" id="ledEnlace"><i></i>Enlace</span>
+    <span class="led" id="ledEsp"><i></i>ESP32</span>
+    <span class="led" id="ledPing"><i></i>— ms</span>
   </div>
+  <button class="icono" id="btnPantalla" title="Pantalla completa">⛶</button>
+</header>
 
-  <div class="centro">
-    <div class="vidrio estado">
-      <div class="leds">
-        <span class="led" id="ledEnlace"><i></i>Enlace</span>
-        <span class="led" id="ledNube"><i></i>Nube</span>
-        <span class="led" id="ledPing"><i></i>— ms</span>
+<main>
+  <!-- ============================== CONTROL ============================== -->
+  <section id="vControl" class="sinsel">
+    <div class="vidrio hud">
+      <div>
+        <div class="cmd" id="cmd">DETENIDO</div>
+        <div class="sub" id="sub">Toca = pulso · Mantén = continuo</div>
       </div>
-      <div class="cmd" id="cmd">DETENIDO</div>
-      <div class="sub" id="sub">Toca = pulso · Mantén = continuo</div>
+      <div class="der">
+        <div class="seg" id="segModo"><button data-v="sticks">🕹 Joysticks</button><button data-v="botones">🔲 12 botones</button></div>
+        <div class="seg" id="segPulso"><button data-v="200">0.2s</button><button data-v="500">0.5s</button><button data-v="1000">1s</button></div>
+      </div>
     </div>
-    <button class="stop" id="btnStop">STOP</button>
-    <div>
-      <div class="etq">PULSO AL TOCAR</div>
-      <div class="segmentos" id="segPulso"><button data-ms="200">0.2 s</button><button data-ms="500">0.5 s</button><button data-ms="1000">1 s</button></div>
-    </div>
-  </div>
 
-  <div class="lado der">
-    <div class="titulo">CABINA · PALA</div>
-    <div class="stick" id="stickDer">
-      <span class="flecha f-ar" data-c="PALA_ARRIBA">⤒</span><span class="flecha f-ab" data-c="PALA_ABAJO">⤓</span>
-      <span class="flecha f-iz" data-c="ROTACION_IZQUIERDA">↺</span><span class="flecha f-de" data-c="ROTACION_DERECHA">↻</span>
-      <div class="perilla"></div>
+    <div id="modoSticks" class="pad">
+      <div class="lado">
+        <small>TRACCIÓN</small>
+        <div class="stick" id="stickIzq">
+          <span class="fl f-ar" data-c="AVANZAR">▲</span><span class="fl f-ab" data-c="RETROCEDER">▼</span>
+          <span class="fl f-iz" data-c="GIRO_IZQUIERDA">◀</span><span class="fl f-de" data-c="GIRO_DERECHA">▶</span>
+          <div class="perilla"></div>
+        </div>
+      </div>
+      <div class="centro">
+        <button class="stop" data-stop>STOP</button>
+        <div class="aux" id="auxSticks"></div>
+      </div>
+      <div class="lado">
+        <small>CABINA · PALA</small>
+        <div class="stick" id="stickDer">
+          <span class="fl f-ar" data-c="PALA_ARRIBA">⤒</span><span class="fl f-ab" data-c="PALA_ABAJO">⤓</span>
+          <span class="fl f-iz" data-c="ROTACION_IZQUIERDA">↺</span><span class="fl f-de" data-c="ROTACION_DERECHA">↻</span>
+          <div class="perilla"></div>
+        </div>
+      </div>
     </div>
-  </div>
-</div>
+
+    <div id="modoBotones" class="botonera" hidden>
+      <div class="rejilla" id="rejilla" style="margin-top:0"></div>
+      <button class="stop barra" data-stop>STOP</button>
+    </div>
+  </section>
+
+  <!-- ================================= IA ================================= -->
+  <section id="vIA" hidden>
+    <div class="dosCol">
+      <div class="vidrio tarjeta">
+        <div class="fila"><b>✨ Copiloto</b><span class="led" id="ledIA"><i></i>…</span></div>
+        <p class="nota">Dile qué hacer como a una persona. Toca una idea o escribe/dicta la tuya.</p>
+        <div class="chat">
+          <button class="redondo" id="btnVoz" title="Hablar">🎤</button>
+          <input id="textoIA" placeholder="Ej. avanza 2 segundos y sube la pala" autocomplete="off">
+          <button class="redondo primario" id="btnEnviar" title="Ejecutar">➤</button>
+        </div>
+        <div class="chips" id="chips">
+          <button>Haz una zanja</button><button>Recoge tierra</button><button>Descarga a la derecha</button>
+          <button>Saluda con la pala</button><button>Baila</button><button>Vuelta completa a la cabina</button>
+          <button>Avanza 2 segundos y sube la pala</button>
+        </div>
+        <div class="respuesta"><div class="quien" id="quien">COPILOTO</div><div id="respuesta">Listo.</div><ul class="pasos" id="pasos"></ul></div>
+      </div>
+      <div class="vidrio tarjeta">
+        <div class="fila"><b>🎤 Voz</b>
+          <div class="seg" id="segVoz"><button data-v="auto">Auto</button><button data-v="directo">Directo</button><button data-v="copiloto">Copiloto</button></div></div>
+        <p class="nota" id="oido">Toca 🎤 y habla. “Alto” siempre detiene al instante.</p>
+        <table style="margin-top:8px">
+          <tr><td>Alto</td><td>“alto”, “detente”, “stop”, “frena”</td></tr>
+          <tr><td>Tracción</td><td>“avanza”, “atrás”, “gira a la izquierda”</td></tr>
+          <tr><td>Cabina / pala</td><td>“cabina derecha”, “sube la pala”, “baja”</td></tr>
+          <tr><td>Funciones</td><td>“función 9” … “función 12”</td></tr>
+          <tr><td>Tiempo</td><td>“… 3 segundos”, “medio segundo”, “sin parar”</td></tr>
+          <tr><td>Rutinas</td><td>“zanja”, “recoge”, “descarga”, “saluda”, “baila”</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================== GESTOS =============================== -->
+  <section id="vGestos" hidden>
+    <div class="dosCol">
+      <div class="vidrio tarjeta">
+        <button class="grande" id="btnCamara">📷 Activar cámara</button>
+        <div class="camara" id="cajaCamara" hidden>
+          <video id="video" playsinline muted></video>
+          <div class="zonas"><div></div><div></div><div></div></div>
+          <div class="lectura" id="lectura">Cargando modelo…</div>
+        </div>
+        <p class="nota">La IA de visión corre en tu teléfono. Mientras sostienes el gesto se mueve; puño o sin mano = alto.</p>
+      </div>
+      <div class="vidrio tarjeta">
+        <table>
+          <tr><td>✊ Puño</td><td>Detener</td></tr>
+          <tr><td>☝️ Índice arriba</td><td>Avanzar</td></tr>
+          <tr><td>👎 Pulgar abajo</td><td>Reversa</td></tr>
+          <tr><td>🖐️ Mano abierta</td><td>Girar: mano a la izquierda o derecha</td></tr>
+          <tr><td>🤟 Te quiero</td><td>Cabina: mano a la izquierda o derecha</td></tr>
+          <tr><td>👍 / ✌️</td><td>Subir / bajar pala</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- =============================== AJUSTES =============================== -->
+  <section id="vAjustes" hidden>
+    <div class="dosCol">
+      <div class="vidrio tarjeta">
+        <div id="cajaLlave">
+          <b>🔑 Llave de control</b>
+          <div class="chat"><input class="campo" id="llave" type="password" placeholder="X-API-Key" autocomplete="off">
+            <button class="redondo primario" id="btnLlave">✓</button></div>
+          <p class="nota">Se guarda en este teléfono. Sin ella no se puede mover la excavadora.</p>
+        </div>
+        <label class="sw" style="margin-top:12px"><span><b>📳 Agitar = paro de emergencia</b></span><input type="checkbox" id="swAgitar"></label>
+        <label class="sw"><span><b>📱 Manejar inclinando el cel</b><br><span class="nota">Adelante/atrás = tracción · lados = girar</span></span><input type="checkbox" id="swIncl"></label>
+        <div id="cajaNivel" hidden><div class="nivel"><i id="bola"></i></div>
+          <div class="fila" style="justify-content:center;margin-top:8px">
+          <button class="grande" id="btnCalibrar" style="min-height:40px;width:auto;padding:0 16px">Recalibrar centro</button></div></div>
+        <p class="nota" id="instalarNota">Instálala: Android ⋮ → <b>Instalar app</b> · iPhone Compartir → <b>Agregar a inicio</b>.</p>
+      </div>
+      <div class="vidrio tarjeta">
+        <b>📶 Wi-Fi de la excavadora</b>
+        <ol>
+          <li>Para cambiar de red: <code>R</code> en el Monitor Serie o <b>D27 a GND</b> 5 s (LED parpadea rápido).</li>
+          <li>Conéctate a <b>EXCAVADORA-JUAN-743610</b> · clave <code>Excavadora2026</code>.</li>
+          <li>Abre <a href="http://192.168.4.1" target="_blank" rel="noopener" style="color:var(--cian)">192.168.4.1</a> → <b>Configure WiFi</b> → elige una red <b>2.4 GHz</b> → Save.</li>
+          <li>Regresa a tu red con internet: el indicador <b>ESP32</b> se pone verde.</li>
+        </ol>
+        <p class="nota" id="infoEsp">—</p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<nav>
+  <button data-v="vControl" aria-current="page"><b>🎮</b>Control</button>
+  <button data-v="vIA" data-nube><b>✨</b>IA</button>
+  <button data-v="vGestos" data-nube><b>✋</b>Gestos</button>
+  <button data-v="vAjustes"><b>⚙️</b>Ajustes</button>
+</nav>
+
+<div class="aviso vidrio" id="aviso" hidden></div>
 <div class="paro" id="paro" hidden>STOP</div>
 
 <script>
-/* Gamepad de la excavadora. Funciona en dos lugares con el mismo código:
-   - NUBE (la sirve la EC2 en /control/…): WebSocket wss://<dominio>/ws/vehiculos/{id}; primero
-     {"tipo":"auth","llave":…} y luego {"tipo":"control","c":"AVANZAR","ms":0}. El servidor lo
-     reenvía al ESP32 al instante y guarda el historial en segundo plano.
-   - LOCAL (la sirve el ESP32 en http://<IP>): WebSocket ws://<IP>:81 con {"c":…,"ms":…}, sin internet.
-   ms = 0 → continuo (se renueva cada 250 ms; si deja de llegar, el ESP32 se detiene solo) · ms > 0 → pulso exacto. */
+/* =========================================================================
+   Excavadora de Juan — un solo archivo para dos lugares:
+   · NUBE  (EC2, /control/…): WebSocket wss://<dominio>/ws/vehiculos/{id}
+           {"tipo":"auth","llave"} → {"tipo":"control","c","ms"} (el servidor lo reenvía al ESP32)
+   · LOCAL (lo sirve el ESP32 en http://<IP>): ws://<IP>:81 con {"c","ms"}, sin internet
+   ms = 0 → continuo (se renueva cada 250 ms; si deja de llegar, el ESP32 se detiene solo)
+   ms > 0 → pulso exacto, cronometrado por el ESP32
+   ========================================================================= */
 const $ = id => document.getElementById(id);
-const NOMBRES = { AVANZAR:"AVANZANDO", RETROCEDER:"REVERSA", GIRO_IZQUIERDA:"GIRO ◀", GIRO_DERECHA:"GIRO ▶",
-  ROTACION_IZQUIERDA:"CABINA ↺", ROTACION_DERECHA:"CABINA ↻", PALA_ARRIBA:"PALA ⤒", PALA_ABAJO:"PALA ⤓", DETENER:"DETENIDO" };
-const RENOVAR_MS = 250;
 const NUBE = location.pathname.startsWith("/control");
+const RENOVAR_MS = 250;
+const esperar = ms => new Promise(r => setTimeout(r, ms));
 function leer(k, d) { try { return localStorage.getItem(k) ?? d; } catch { return d; } }
 function guardar(k, v) { try { localStorage.setItem(k, v); } catch {} }
-const vehiculo = Number(new URLSearchParams(location.search).get("v") || leer("iot_vehiculo", "1"));
-let ws = null, pulso = Number(leer("pulso", "500")), ultimaTelemetria = 0, autorizado = !NUBE, finPulso = null;
-
-function led(id, texto, estado) { const l = $(id); l.className = "led" + (estado ? " " + estado : ""); l.lastChild.textContent = texto; }
 function vibrar(p) { if (navigator.vibrate) navigator.vibrate(p); }
+function led(id, t, e) { const l = $(id); l.className = "led" + (e ? " " + e : ""); l.lastChild.textContent = t; }
+function aviso(t) { const a = $("aviso"); a.textContent = t; a.hidden = false; clearTimeout(a._t); a._t = setTimeout(() => a.hidden = true, 3500); }
+const sinAcentos = s => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
 
-function pintarComando(c, detalle, ms = 0) {
-  clearTimeout(finPulso);
-  $("cmd").textContent = NOMBRES[c] || c;
-  $("cmd").classList.toggle("mueve", c !== "DETENER");
-  if (detalle) $("sub").textContent = detalle;
-  if (ms > 0 && c !== "DETENER") finPulso = setTimeout(() => pintarComando("DETENER"), ms);
-}
-function pintarTelemetria(t) {
-  if (!t) return;
-  ultimaTelemetria = Date.now();
-  led("ledNube", "ESP32", "ok");
-  $("sub").textContent = `ESP32 en línea · Wi-Fi ${t.rssi} dBm · ${t.ip}`;
-}
-function pedirLlave() { $("panelLlave").hidden = false; $("llave").value = leer("iot_api_key", ""); $("llave").focus(); }
+/* los 12 comandos de la retro (mismo orden que el ESP32) */
+const CMDS = [
+  ["AVANZAR", "▲", "Avanzar"], ["RETROCEDER", "▼", "Reversa"], ["GIRO_IZQUIERDA", "◀", "Girar izq."], ["GIRO_DERECHA", "▶", "Girar der."],
+  ["ROTACION_IZQUIERDA", "↺", "Cabina izq."], ["ROTACION_DERECHA", "↻", "Cabina der."], ["PALA_ARRIBA", "⤒", "Subir pala"], ["PALA_ABAJO", "⤓", "Bajar pala"],
+  ["COMANDO_9", "⚙", "Función 9"], ["COMANDO_10", "⚙", "Función 10"], ["COMANDO_11", "⚙", "Función 11"], ["COMANDO_12", "⚙", "Función 12"],
+];
+const ETIQUETA = Object.fromEntries(CMDS.map(([c, , t]) => [c, t.toUpperCase()]));
+ETIQUETA.DETENER = "DETENIDO";
 
-/* ---------- enlace: nube (EC2) o local (ESP32) ---------- */
+const vehiculo = Number(new URLSearchParams(location.search).get("v") || leer("iot_vehiculo", "1"));
+let pulso = Number(leer("pulso", "500")), modo = leer("modo", "sticks");
+let ws = null, autorizado = !NUBE, ultimaTele = 0, finHud = null;
+
+/* ============================ navegación ============================ */
+document.querySelectorAll("nav button").forEach(b => {
+  if (!NUBE && b.hasAttribute("data-nube")) b.hidden = true;   // IA y cámara necesitan internet y HTTPS
+  b.addEventListener("click", () => {
+    document.querySelectorAll("nav button").forEach(x => x.removeAttribute("aria-current"));
+    b.setAttribute("aria-current", "page");
+    document.querySelectorAll("main section").forEach(s => s.hidden = s.id !== b.dataset.v);
+    if (b.dataset.v !== "vGestos") apagarCamara();
+    if (b.dataset.v !== "vIA") apagarVoz();
+  });
+});
+function segmento(id, valor, cb) {
+  const bs = [...$(id).querySelectorAll("button")];
+  const pinta = v => bs.forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === String(v))));
+  bs.forEach(b => b.addEventListener("click", () => { pinta(b.dataset.v); cb(b.dataset.v); }));
+  pinta(valor);
+}
+segmento("segPulso", pulso, v => { pulso = Number(v); guardar("pulso", v); });
+segmento("segModo", modo, v => { modo = v; guardar("modo", v); pintarModo(); });
+function pintarModo() { $("modoSticks").hidden = modo !== "sticks"; $("modoBotones").hidden = modo !== "botones"; detenerTodo(false); }
+
+/* ============================ enlace ============================ */
 function conectar() {
-  const url = NUBE ? `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/vehiculos/${vehiculo}`
-                   : `ws://${location.hostname}:81/`;
-  ws = new WebSocket(url);
+  ws = new WebSocket(NUBE ? `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws/vehiculos/${vehiculo}` : `ws://${location.hostname}:81/`);
   ws.onopen = () => {
     led("ledEnlace", NUBE ? "Servidor" : "Enlace", "ok");
-    if (NUBE) {
-      const llave = leer("iot_api_key", "");
-      if (llave) ws.send(JSON.stringify({ tipo: "auth", llave })); else pedirLlave();
-    }
+    if (NUBE) { const k = leer("iot_api_key", ""); if (k) ws.send(JSON.stringify({ tipo: "auth", llave: k })); else pedirLlave(); }
   };
-  ws.onclose = () => { led("ledEnlace", "Sin enlace", "mal"); soltarTodo(false); setTimeout(conectar, 1500); };
+  ws.onclose = () => { led("ledEnlace", "Sin enlace", "mal"); detenerTodo(false); setTimeout(conectar, 1500); };
   ws.onmessage = e => {
     let m; try { m = JSON.parse(e.data); } catch { return; }
-    if (!NUBE) {                                   // mensajes del ESP32 (control local)
+    if (!NUBE) {
       if (m.t === "pong") led("ledPing", `${Math.round(performance.now() - m.p)} ms`, "ok");
-      if (m.t === "estado") {
-        pintarComando(m.c, `${m.o || ""} · Wi-Fi ${m.rssi} dBm · ${m.ip}`);
-        led("ledNube", m.nube ? "Nube" : "Sin nube", m.nube ? "ok" : "mal");
-      }
+      if (m.t === "estado") { hud(m.c); tele({ rssi: m.rssi, ip: m.ip }); }
       return;
     }
-    switch (m.tipo) {                              // eventos del servidor (nube)
+    switch (m.tipo) {
       case "pong": if (m.p != null) led("ledPing", `${Math.round(performance.now() - m.p)} ms`, "ok"); break;
-      case "auth":
-        autorizado = m.ok;
-        if (!m.ok) { led("ledEnlace", "Llave inválida", "mal"); pedirLlave(); } else $("panelLlave").hidden = true;
-        break;
-      case "estado_inicial":
-        if (m.estado) pintarComando(m.estado.comando || "DETENER");
-        if (m.telemetria) pintarTelemetria(m.telemetria);
-        break;
-      case "control": pintarComando(m.comando, null, m.ms); break;
-      case "movimiento": pintarComando(m.comando, m.origen); break;
-      case "demo_movimiento": pintarComando(m.comando, `DEMO ${m.orden}/${m.total_movimientos}`, m.duracion_ms); break;
-      case "telemetria": pintarTelemetria(m); break;
-      case "error": $("sub").textContent = m.detalle || "Error"; break;
+      case "auth": autorizado = m.ok; if (!m.ok) { led("ledEnlace", "Llave inválida", "mal"); pedirLlave(); } break;
+      case "estado_inicial": if (m.estado) hud(m.estado.comando || "DETENER"); if (m.telemetria) tele(m.telemetria); break;
+      case "control": hud(m.comando, m.ms); break;
+      case "movimiento": hud(m.comando); break;
+      case "demo_movimiento": hud(m.comando, m.duracion_ms); break;
+      case "telemetria": tele(m); break;
+      case "error": aviso(m.detalle || "Error"); break;
     }
   };
 }
 function mandar(c, ms) {
-  if (!ws || ws.readyState !== 1) return;
-  if (NUBE && !autorizado) return pedirLlave();
+  if (!ws || ws.readyState !== 1) { aviso("Sin enlace con el servidor"); return; }
+  if (NUBE && !autorizado) { pedirLlave(); return; }
   ws.send(JSON.stringify(NUBE ? { tipo: "control", c, ms } : { c, ms }));
 }
 setInterval(() => {
   if (ws && ws.readyState === 1) ws.send(JSON.stringify(NUBE ? { tipo: "ping", p: performance.now() } : { p: performance.now() }));
-  if (NUBE && Date.now() - ultimaTelemetria > 12000) led("ledNube", "ESP32 fuera", "mal");
+  if (Date.now() - ultimaTele > 12000) led("ledEsp", "ESP32 fuera", "mal");
 }, 2000);
-
-if (NUBE) {
-  $("btnMas").hidden = false; $("btnLlave").hidden = false;
-  $("btnLlave").addEventListener("click", pedirLlave);
-  $("btnGuardarLlave").addEventListener("click", () => {
-    const llave = $("llave").value.trim();
-    guardar("iot_api_key", llave);
-    if (ws && ws.readyState === 1) ws.send(JSON.stringify({ tipo: "auth", llave }));
-  });
+function hud(c, ms = 0) {
+  clearTimeout(finHud);
+  $("cmd").textContent = ETIQUETA[c] || c; $("cmd").classList.toggle("mueve", c !== "DETENER");
+  if (ms > 0 && c !== "DETENER") finHud = setTimeout(() => hud("DETENER"), ms);
 }
+function tele(t) {
+  ultimaTele = Date.now(); led("ledEsp", "ESP32", "ok");
+  $("sub").textContent = `ESP32 en línea · Wi-Fi ${t.rssi} dBm · ${t.ip}`;
+  $("infoEsp").textContent = `Conectado con señal ${t.rssi} dBm, IP ${t.ip}. Control local: http://${t.ip}`;
+}
+function pedirLlave() {
+  document.querySelector('nav button[data-v="vAjustes"]').click();
+  $("llave").focus(); aviso("Pon tu llave de control para poder mover la excavadora.");
+}
+$("llave").value = leer("iot_api_key", "");
+$("cajaLlave").hidden = !NUBE;
+$("btnLlave").addEventListener("click", () => {
+  const k = $("llave").value.trim(); guardar("iot_api_key", k);
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify({ tipo: "auth", llave: k }));
+  aviso("Llave guardada."); document.querySelector('nav button[data-v="vControl"]').click();
+});
 
-/* ---------- joysticks ---------- */
-let dueño = null;   // solo un stick manda a la vez (la máquina hace un movimiento a la vez)
+/* ============================ motor de movimiento ============================ */
+// mantener: continuo renovado · soltar antes del pulso: completa un pulso exacto · soltar después: alto
+const mov = { c: null, t0: 0, renovar: null };
+let plan = null;
+function marcar(c) { document.querySelectorAll(".btn[data-c]").forEach(b => b.classList.toggle("activo", b.dataset.c === c)); }
+function pararRenovar() { clearInterval(mov.renovar); mov.renovar = null; }
+function sostener(c) {
+  cancelarPlan(); pararRenovar();
+  mov.c = c; mov.t0 = performance.now(); marcar(c); vibrar(12);
+  mandar(c, 0); mov.renovar = setInterval(() => mandar(c, 0), RENOVAR_MS);
+}
+function soltar(c) {
+  if (mov.c !== c) return;
+  const tenido = performance.now() - mov.t0; pararRenovar(); mov.c = null; marcar(null);
+  if (tenido < pulso) mandar(c, Math.round(pulso - tenido)); else mandar("DETENER", 0);
+}
+function detenerTodo(enviar = true) {
+  cancelarPlan(); pararRenovar(); mov.c = null; marcar(null); sticks.forEach(s => s.soltar());
+  if (enviar) { mandar("DETENER", 0); vibrar([30, 40, 30]); }
+}
+document.querySelectorAll("[data-stop]").forEach(b => b.addEventListener("click", () => detenerTodo()));
+
+/* --- botones (12) --- */
+function crearBoton(c, ico, txt, i, extra = "") {
+  const b = document.createElement("button");
+  b.className = "btn sinsel " + extra; b.dataset.c = c;
+  b.innerHTML = `<span class="num">${i}</span><b>${ico}</b><span></span>`; b.lastChild.textContent = txt;
+  b.addEventListener("pointerdown", e => { e.preventDefault(); b.setPointerCapture(e.pointerId); sostener(c); });
+  ["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => b.addEventListener(ev, () => soltar(c)));
+  b.addEventListener("contextmenu", e => e.preventDefault());
+  return b;
+}
+CMDS.forEach(([c, ico, txt], i) => $("rejilla").append(crearBoton(c, ico, txt, i + 1, i >= 8 ? "aux2" : "")));
+CMDS.slice(8).forEach(([c, ico, txt], i) => $("auxSticks").append(crearBoton(c, ico, txt, i + 9, "aux2")));
+
+/* --- joysticks --- */
+let dueño = null;
 function crearStick(el) {
-  const perilla = el.querySelector(".perilla");
-  const mapa = {}; el.querySelectorAll(".flecha").forEach(f => mapa[[...f.classList].find(k => k.startsWith("f-"))] = f.dataset.c);
-  const s = { id: null, dir: null, t0: 0, renovar: null };
-  const marcar = d => el.querySelectorAll(".flecha").forEach(f => f.classList.toggle("on", f.dataset.c === d));
-
-  function fijar(d) {
-    if (d === s.dir) return;
-    s.dir = d; marcar(d); clearInterval(s.renovar); s.renovar = null;
-    if (d) { vibrar(12); mandar(d, 0); s.renovar = setInterval(() => mandar(s.dir, 0), RENOVAR_MS); }
-    else mandar("DETENER", 0);
-  }
+  const perilla = el.querySelector(".perilla"), mapa = {};
+  el.querySelectorAll(".fl").forEach(f => mapa[[...f.classList].find(k => k.startsWith("f-"))] = f.dataset.c);
+  const s = { id: null, dir: null };
+  const pinta = d => el.querySelectorAll(".fl").forEach(f => f.classList.toggle("on", f.dataset.c === d));
   function mover(e) {
     const r = el.getBoundingClientRect(), R = r.width / 2;
-    let dx = (e.clientX - (r.left + R)) / R, dy = (e.clientY - (r.top + R)) / R;
+    let dx = (e.clientX - r.left - R) / R, dy = (e.clientY - r.top - R) / R;
     const d = Math.hypot(dx, dy); if (d > 1) { dx /= d; dy /= d; }
     perilla.style.transform = `translate(${dx * R * .62}px, ${dy * R * .62}px)`;
-    let nd = null;
-    if (d > .35) nd = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? mapa["f-iz"] : mapa["f-de"]) : (dy < 0 ? mapa["f-ar"] : mapa["f-ab"]);
-    fijar(nd);
+    const nd = d > .35 ? (Math.abs(dx) > Math.abs(dy) ? mapa[dx < 0 ? "f-iz" : "f-de"] : mapa[dy < 0 ? "f-ar" : "f-ab"]) : null;
+    if (nd === s.dir) return;
+    if (s.dir && !nd) soltar(s.dir);           // regresó al centro
+    s.dir = nd; pinta(nd);
+    if (nd) sostener(nd);
   }
   el.addEventListener("pointerdown", e => {
     if (s.id !== null || (dueño && dueño !== s)) return;
-    e.preventDefault(); s.id = e.pointerId; dueño = s; el.setPointerCapture(s.id);
-    s.t0 = performance.now(); el.classList.add("activo"); mover(e);
+    e.preventDefault(); s.id = e.pointerId; dueño = s; el.setPointerCapture(s.id); el.classList.add("activo"); mover(e);
   });
   el.addEventListener("pointermove", e => { if (e.pointerId === s.id) mover(e); });
   const fin = e => {
     if (e.pointerId !== s.id) return;
-    s.id = null; dueño = null; el.classList.remove("activo"); perilla.style.transform = "";
-    clearInterval(s.renovar); s.renovar = null;
-    const tenido = performance.now() - s.t0;
-    // toque corto = pulso exacto (lo cronometra el ESP32); mantenido = alto al soltar
-    if (s.dir) mandar(tenido < pulso ? s.dir : "DETENER", tenido < pulso ? Math.round(pulso - tenido) : 0);
-    s.dir = null; marcar(null);
+    if (s.dir) soltar(s.dir);
+    s.soltar();
   };
   ["pointerup", "pointercancel", "lostpointercapture"].forEach(ev => el.addEventListener(ev, fin));
-  s.soltar = () => { clearInterval(s.renovar); s.renovar = null; s.dir = null; s.id = null; marcar(null); el.classList.remove("activo"); perilla.style.transform = ""; };
+  s.soltar = () => { s.id = null; s.dir = null; dueño = null; pinta(null); el.classList.remove("activo"); perilla.style.transform = ""; };
   return s;
 }
 const sticks = [crearStick($("stickIzq")), crearStick($("stickDer"))];
-function soltarTodo(enviar = true) { sticks.forEach(s => s.soltar()); dueño = null; teclas.clear(); clearInterval(renovarTecla); if (enviar) mandar("DETENER", 0); }
 
-/* ---------- STOP, pulso, teclado, pantalla ---------- */
-$("btnStop").addEventListener("click", () => { soltarTodo(); vibrar([30, 40, 30]); });
-
-const botones = [...$("segPulso").querySelectorAll("button")];
-const pintarPulso = () => botones.forEach(b => b.setAttribute("aria-pressed", String(Number(b.dataset.ms) === pulso)));
-botones.forEach(b => b.addEventListener("click", () => { pulso = Number(b.dataset.ms); pintarPulso(); guardar("pulso", pulso); }));
-pintarPulso();
-
-const TECLAS = { w:"AVANZAR", arrowup:"AVANZAR", s:"RETROCEDER", arrowdown:"RETROCEDER", a:"GIRO_IZQUIERDA", arrowleft:"GIRO_IZQUIERDA",
-  d:"GIRO_DERECHA", arrowright:"GIRO_DERECHA", q:"ROTACION_IZQUIERDA", e:"ROTACION_DERECHA", r:"PALA_ARRIBA", f:"PALA_ABAJO" };
-const teclas = new Map(); let renovarTecla = null;
+/* --- teclado --- */
+const TECLAS = { w: "AVANZAR", arrowup: "AVANZAR", s: "RETROCEDER", arrowdown: "RETROCEDER", a: "GIRO_IZQUIERDA", arrowleft: "GIRO_IZQUIERDA",
+  d: "GIRO_DERECHA", arrowright: "GIRO_DERECHA", q: "ROTACION_IZQUIERDA", e: "ROTACION_DERECHA", r: "PALA_ARRIBA", f: "PALA_ABAJO",
+  "1": "COMANDO_9", "2": "COMANDO_10", "3": "COMANDO_11", "4": "COMANDO_12" };
 addEventListener("keydown", e => {
   if (e.target.matches("input")) return;
-  if (e.key === " ") { e.preventDefault(); return soltarTodo(); }
-  const c = TECLAS[e.key.toLowerCase()]; if (!c || e.repeat) return;
-  teclas.set(c, performance.now()); mandar(c, 0);
-  clearInterval(renovarTecla); renovarTecla = setInterval(() => mandar(c, 0), RENOVAR_MS);
+  if (e.key === " ") { e.preventDefault(); return detenerTodo(); }
+  const c = TECLAS[e.key.toLowerCase()]; if (c && !e.repeat) { e.preventDefault(); sostener(c); }
 });
-addEventListener("keyup", e => {
-  const c = TECLAS[e.key.toLowerCase()]; if (!c || !teclas.has(c)) return;
-  const tenido = performance.now() - teclas.get(c); teclas.delete(c); clearInterval(renovarTecla);
-  mandar(tenido < pulso ? c : "DETENER", tenido < pulso ? Math.round(pulso - tenido) : 0);
-});
+addEventListener("keyup", e => { const c = TECLAS[e.key.toLowerCase()]; if (c) soltar(c); });
 
-$("btnPantalla").addEventListener("click", async () => {
-  try { await document.documentElement.requestFullscreen(); await screen.orientation.lock("landscape"); } catch {}
-});
-document.addEventListener("visibilitychange", () => { if (document.hidden) soltarTodo(); });
+/* ============================ IA: copiloto + rutinas ============================ */
+let copilotoNube = false;
+async function revisarCopiloto() {
+  if (!NUBE) return;
+  try { copilotoNube = (await (await fetch(`/vehiculos/${vehiculo}/copiloto`)).json()).disponible === true; } catch { copilotoNube = false; }
+  led("ledIA", copilotoNube ? "Claude" : "Rutinas integradas", copilotoNube ? "ok" : "");
+}
+const P = (c, ms) => ({ comando: c, duracion_ms: ms });
+const RUTINAS = [
+  [/zanja|excava|cava/, "Zanja: bajo la pala, avanzo, la subo y regreso.", () => [P("PALA_ABAJO", 900), P("AVANZAR", 1500), P("PALA_ARRIBA", 900), P("RETROCEDER", 1500)]],
+  [/recoge|carga|levanta tierra/, "Recojo: bajo la pala, avanzo poquito y la subo.", () => [P("PALA_ABAJO", 900), P("AVANZAR", 800), P("PALA_ARRIBA", 1100)]],
+  [/descarga|tira|vacia|suelta/, null, t => { const izq = /izquierda/.test(t);
+     return [P(izq ? "ROTACION_IZQUIERDA" : "ROTACION_DERECHA", 1500), P("PALA_ABAJO", 900), P("PALA_ARRIBA", 900), P(izq ? "ROTACION_DERECHA" : "ROTACION_IZQUIERDA", 1500)]; }],
+  [/saluda|hola/, "¡Hola! Saludo con la pala.", () => [P("PALA_ARRIBA", 400), P("PALA_ABAJO", 400), P("PALA_ARRIBA", 400), P("PALA_ABAJO", 400)]],
+  [/baila|fiesta/, "A bailar.", () => [P("GIRO_IZQUIERDA", 500), P("GIRO_DERECHA", 500), P("GIRO_IZQUIERDA", 500), P("GIRO_DERECHA", 500), P("PALA_ARRIBA", 400), P("PALA_ABAJO", 400)]],
+  [/vuelta|360|completa/, "Vuelta completa de la cabina.", t => [P(/izquierda/.test(t) ? "ROTACION_IZQUIERDA" : "ROTACION_DERECHA", 4000)]],
+  [/estaciona|regresa a casa/, "Me estaciono: reversa.", () => [P("RETROCEDER", 1500)]],
+];
+function planLocal(texto) {
+  const t = sinAcentos(texto.toLowerCase());
+  for (const [re, txt, f] of RUTINAS) if (re.test(t)) return { explicacion: txt || "Descargo y regreso la cabina.", pasos: f(t) };
+  const pasos = [];
+  for (const parte of t.split(/\s*(?:,|;|\by luego\b|\bluego\b|\by despues\b|\bdespues\b|\by\b)\s*/).filter(Boolean)) {
+    const o = interpretar(parte); if (o) pasos.push(P(o.c, o.c === "DETENER" ? 200 : (o.ms || 1000)));
+  }
+  return { explicacion: pasos.length ? "Entendí estos pasos:" : "No entendí. Prueba con una rutina o algo como “avanza 2 segundos y sube la pala”.", pasos };
+}
+async function copiloto(texto) {
+  texto = texto.trim(); if (!texto) return;
+  $("respuesta").textContent = "Pensando…"; $("pasos").innerHTML = "";
+  let r = null;
+  if (copilotoNube) {
+    try {
+      const resp = await fetch(`/vehiculos/${vehiculo}/copiloto`, { method: "POST",
+        headers: { "Content-Type": "application/json", "X-API-Key": leer("iot_api_key", "") }, body: JSON.stringify({ texto }) });
+      if (resp.ok) { r = await resp.json(); $("quien").textContent = "COPILOTO · CLAUDE"; }
+    } catch {}
+  }
+  if (!r) { r = planLocal(texto); $("quien").textContent = "COPILOTO · RUTINAS"; }
+  $("respuesta").textContent = r.explicacion;
+  if (r.pasos.length) ejecutarPlan(r.pasos);
+}
+function pintarPlan(pasos, i) {
+  $("pasos").innerHTML = "";
+  pasos.forEach((p, k) => { const li = document.createElement("li"); li.className = k < i ? "hecho" : k === i ? "actual" : "";
+    li.innerHTML = "<span></span><span></span>"; li.firstChild.textContent = `${k + 1}. ${ETIQUETA[p.comando] || p.comando}`;
+    li.lastChild.textContent = `${(p.duracion_ms / 1000).toFixed(1)} s`; $("pasos").append(li); });
+}
+function cancelarPlan() { if (plan) { plan.cancelado = true; plan = null; } }
+async function ejecutarPlan(pasos) {
+  cancelarPlan(); pararRenovar(); const p = { cancelado: false }; plan = p;
+  for (let i = 0; i < pasos.length && !p.cancelado; i++) {
+    pintarPlan(pasos, i);
+    const { comando, duracion_ms } = pasos[i];
+    mandar(comando, comando === "DETENER" ? 0 : duracion_ms);     // el ESP32 cronometra cada paso exacto
+    await esperar(comando === "DETENER" ? 250 : duracion_ms + 300);
+  }
+  pintarPlan(pasos, p.cancelado ? -1 : pasos.length);
+  if (p.cancelado) $("respuesta").textContent += " · Cancelado.";
+  if (plan === p) plan = null;
+}
+$("btnEnviar").addEventListener("click", () => { copiloto($("textoIA").value); $("textoIA").value = ""; });
+$("textoIA").addEventListener("keydown", e => { if (e.key === "Enter") { copiloto(e.target.value); e.target.value = ""; } });
+$("chips").querySelectorAll("button").forEach(b => b.addEventListener("click", () => copiloto(b.textContent)));
 
-// Agitar el cel = paro de emergencia
+/* --- intérprete de órdenes cortas (voz directa) --- */
+const NUM = { un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, once: 11, doce: 12 };
+function interpretar(frase) {
+  const limpio = sinAcentos(frase.toLowerCase()).replace(/[!¡?¿]|(?<!\d)[.,]|[.,](?!\d)/g, " ").trim();
+  const continuo = /\b(sin parar|continuo|sigue)\b/.test(limpio);
+  const t = " " + limpio.replace(/\bsin parar\b/g, " ") + " ", hay = re => re.test(t);
+  if (hay(/\b(alto|parate|parale|detente|deten|detener|stop|frena|quieto)\b/) || /^(para|parar|ya)$/.test(limpio)) return { c: "DETENER" };
+  let c = null;
+  const f = t.match(/\b(funcion|comando|boton)\s+(9|10|11|12|nueve|diez|once|doce)\b/);
+  const izq = hay(/\bizquierda\b/), der = hay(/\bderecha\b/);
+  if (f) c = `COMANDO_${NUM[f[2]] || f[2]}`;
+  else if (hay(/\b(sube|subir|subela|levanta|arriba)\b/)) c = "PALA_ARRIBA";
+  else if (hay(/\b(baja|bajar|bajala|abajo)\b/)) c = "PALA_ABAJO";
+  else if (hay(/\b(cabina|torre|rota|rotar|voltea)\b/) && (izq || der)) c = izq ? "ROTACION_IZQUIERDA" : "ROTACION_DERECHA";
+  else if (izq) c = "GIRO_IZQUIERDA"; else if (der) c = "GIRO_DERECHA";
+  else if (hay(/\b(atras|retrocede|reversa|regresa)\b/)) c = "RETROCEDER";
+  else if (hay(/\b(avanza|avanzar|adelante|camina)\b/)) c = "AVANZAR";
+  if (!c) return null;
+  let ms = 1000;
+  if (continuo) ms = 0; else if (hay(/\bmedio segundo\b/)) ms = 500;
+  else { const m = t.match(/(\d+(?:[.,]\d+)?|un|uno|una|dos|tres|cuatro|cinco|seis|siete|ocho|nueve|diez)\s*(segundos?|seg)\b/);
+         if (m) ms = Math.min(10, NUM[m[1]] || parseFloat(m[1].replace(",", "."))) * 1000; }
+  return { c, ms };
+}
+
+/* --- voz --- */
+const Reconocedor = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, vozOn = false, modoVoz = leer("modoVoz", "auto");
+segmento("segVoz", modoVoz, v => { modoVoz = v; guardar("modoVoz", v); });
+if (!Reconocedor) { $("btnVoz").disabled = true; $("oido").textContent = "Este navegador no reconoce voz: usa Chrome (Android) o Safari (iPhone)."; }
+function frase(t) {
+  $("oido").textContent = `“${t}”`;
+  const o = interpretar(t);
+  if (o && o.c === "DETENER") return detenerTodo();
+  const directo = modoVoz === "directo" || (modoVoz === "auto" && o && t.split(/\s+/).length <= 6 && !/\b(y|luego|despues|después)\b/i.test(t) && !RUTINAS.some(([re]) => re.test(sinAcentos(t.toLowerCase()))));
+  if (directo) {
+    if (!o) { $("oido").textContent += " · no entendí"; return; }
+    if (o.ms === 0) sostenerVoz(o.c); else { cancelarPlan(); pararRenovar(); mandar(o.c, o.ms); }
+    $("oido").textContent += ` → ${ETIQUETA[o.c]} ${o.ms ? `(${o.ms / 1000} s)` : "(hasta “alto”)"}`;
+  } else copiloto(t);
+}
+function sostenerVoz(c) { sostener(c); setTimeout(() => { if (mov.c === c) detenerTodo(); }, 20000); }   // tope de seguridad
+function encenderVoz() {
+  rec = new Reconocedor(); rec.lang = "es-MX"; rec.continuous = true; rec.interimResults = false;
+  rec.onresult = e => frase(e.results[e.results.length - 1][0].transcript.trim());
+  rec.onerror = e => { if (e.error === "not-allowed") { aviso("Permite el micrófono."); apagarVoz(); } };
+  rec.onend = () => { if (vozOn) try { rec.start(); } catch {} };
+  rec.start(); vozOn = true; $("btnVoz").classList.add("on"); $("oido").textContent = "Escuchando…";
+}
+function apagarVoz() { if (!vozOn) return; vozOn = false; try { rec.stop(); } catch {} $("btnVoz").classList.remove("on"); }
+$("btnVoz").addEventListener("click", () => vozOn ? apagarVoz() : encenderVoz());
+
+/* ============================ gestos (MediaPipe) ============================ */
+const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35";
+const MODELO = "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task";
+let rg = null, flujo = null, camOn = false, ultimoFrame = -1;
+const g = { cand: null, n: 0, enviado: null, sinMano: 0 };
+function gestoAComando(nombre, x) {
+  const lado = x < .35 ? "I" : x > .65 ? "D" : "C";
+  return { Closed_Fist: "DETENER", Pointing_Up: "AVANZAR", Thumb_Down: "RETROCEDER", Thumb_Up: "PALA_ARRIBA", Victory: "PALA_ABAJO",
+    Open_Palm: lado === "I" ? "GIRO_IZQUIERDA" : lado === "D" ? "GIRO_DERECHA" : "DETENER",
+    ILoveYou: lado === "I" ? "ROTACION_IZQUIERDA" : lado === "D" ? "ROTACION_DERECHA" : "DETENER" }[nombre] || null;
+}
+async function encenderCamara() {
+  $("cajaCamara").hidden = false; $("lectura").textContent = "Cargando modelo…"; $("btnCamara").textContent = "📷 Apagar cámara"; $("btnCamara").classList.add("on"); camOn = true;
+  try {
+    if (!rg) {
+      const { FilesetResolver, GestureRecognizer } = await import(`${MP}/vision_bundle.mjs`);
+      rg = await GestureRecognizer.createFromOptions(await FilesetResolver.forVisionTasks(`${MP}/wasm`),
+        { baseOptions: { modelAssetPath: MODELO, delegate: "GPU" }, runningMode: "VIDEO", numHands: 1 });
+    }
+    flujo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: 640, height: 480 }, audio: false });
+    if (!camOn) return apagarCamara();
+    $("video").srcObject = flujo; await $("video").play(); $("lectura").textContent = "Muestra la mano"; requestAnimationFrame(cicloGestos);
+  } catch (e) { aviso("No se pudo usar la cámara: " + e.message); apagarCamara(); }
+}
+function cicloGestos() {
+  if (!camOn) return;
+  const v = $("video");
+  if (v.readyState >= 2 && v.currentTime !== ultimoFrame) {
+    ultimoFrame = v.currentTime;
+    const r = rg.recognizeForVideo(v, performance.now());
+    let c = null, txt = "Sin mano";
+    if (r.gestures.length && r.landmarks.length) {
+      const k = r.gestures[0][0]; if (k.score >= .6) c = gestoAComando(k.categoryName, 1 - r.landmarks[0][9].x);
+      txt = c ? `${k.categoryName.replace("_", " ")} → ${ETIQUETA[c]}` : "Gesto no asignado"; g.sinMano = 0;
+    } else if (++g.sinMano > 8) c = "DETENER";
+    $("lectura").textContent = txt;
+    if (c) {
+      if (c === g.cand) g.n++; else { g.cand = c; g.n = 1; }
+      if (g.n === 5 && c !== g.enviado) { g.enviado = c; if (c === "DETENER") { if (mov.c) detenerTodo(); } else sostener(c); }
+    }
+  }
+  requestAnimationFrame(cicloGestos);
+}
+function apagarCamara() {
+  if (!camOn && !flujo) return; camOn = false;
+  if (flujo) { flujo.getTracks().forEach(t => t.stop()); flujo = null; }
+  $("video").srcObject = null; $("cajaCamara").hidden = true; $("btnCamara").textContent = "📷 Activar cámara"; $("btnCamara").classList.remove("on");
+  if (g.enviado && g.enviado !== "DETENER" && mov.c) detenerTodo();
+  Object.assign(g, { cand: null, n: 0, enviado: null, sinMano: 0 });
+}
+$("btnCamara").addEventListener("click", () => camOn ? apagarCamara() : encenderCamara());
+
+/* ============================ sensores ============================ */
+async function permisoSensores() {
+  try {
+    if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function"
+        && await DeviceOrientationEvent.requestPermission() !== "granted") return false;
+    if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") await DeviceMotionEvent.requestPermission();
+  } catch { return false; }
+  return true;
+}
+const incl = { on: false, base: null, enviado: null, cand: null, n: 0 };
+function alOrientar(e) {
+  if (!incl.on || e.beta == null) return;
+  if (!incl.base) incl.base = { b: e.beta, g: e.gamma };
+  const db = e.beta - incl.base.b, dg = e.gamma - incl.base.g, lim = v => Math.max(-45, Math.min(45, v));
+  $("bola").style.transform = `translate(${lim(dg)}px, ${lim(db)}px)`;
+  let c = "DETENER";
+  if (Math.abs(db) >= Math.abs(dg)) { if (db < -15) c = "AVANZAR"; else if (db > 15) c = "RETROCEDER"; }
+  else { if (dg < -15) c = "GIRO_IZQUIERDA"; else if (dg > 15) c = "GIRO_DERECHA"; }
+  if (c === incl.cand) incl.n++; else { incl.cand = c; incl.n = 1; }
+  if (incl.n === 6 && c !== incl.enviado) { incl.enviado = c; if (c === "DETENER") { if (mov.c) detenerTodo(); } else sostener(c); }
+}
+$("swIncl").addEventListener("change", async e => {
+  if (e.target.checked) {
+    if (!await permisoSensores()) { e.target.checked = false; return aviso("Sin permiso para los sensores."); }
+    Object.assign(incl, { on: true, base: null, enviado: "DETENER", cand: null, n: 0 }); $("cajaNivel").hidden = false;
+    addEventListener("deviceorientation", alOrientar); aviso("Esa posición es el centro (alto). Ve a Control y maneja.");
+  } else apagarIncl();
+});
+function apagarIncl() { if (!incl.on) return; incl.on = false; removeEventListener("deviceorientation", alOrientar); $("swIncl").checked = false; $("cajaNivel").hidden = true; if (mov.c) detenerTodo(); }
+$("btnCalibrar").addEventListener("click", () => { incl.base = null; aviso("Centro recalibrado."); });
+
+$("swAgitar").checked = leer("agitar", "1") === "1";
+$("swAgitar").addEventListener("change", e => { guardar("agitar", e.target.checked ? "1" : "0"); if (e.target.checked) permisoSensores(); });
 let ultimoAgite = 0;
 addEventListener("devicemotion", e => {
+  if (!$("swAgitar").checked) return;
   const a = e.accelerationIncludingGravity; if (!a || a.x == null) return;
   if (Math.hypot(a.x, a.y, a.z) > 28 && performance.now() - ultimoAgite > 1500) {
-    ultimoAgite = performance.now(); soltarTodo(); vibrar([200, 80, 200]);
+    ultimoAgite = performance.now(); apagarIncl(); apagarCamara(); apagarVoz(); detenerTodo(); vibrar([200, 80, 200]);
     $("paro").hidden = false; setTimeout(() => $("paro").hidden = true, 800);
   }
 });
 
+/* ============================ arranque ============================ */
+$("btnPantalla").addEventListener("click", async () => {
+  try { if (document.fullscreenElement) await document.exitFullscreen(); else { await document.documentElement.requestFullscreen(); await screen.orientation.lock("landscape"); } } catch {}
+});
+document.addEventListener("visibilitychange", () => { if (document.hidden) { apagarCamara(); apagarVoz(); apagarIncl(); if (mov.c || plan) detenerTodo(); } });
+if (NUBE && "serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+pintarModo();
 conectar();
+revisarCopiloto();
 </script>
 </body>
 </html>
