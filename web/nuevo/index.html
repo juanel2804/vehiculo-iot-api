@@ -358,7 +358,9 @@ const CMDS = [
   ["ROTACION_IZQUIERDA", "↺", "Cabina izq."], ["ROTACION_DERECHA", "↻", "Cabina der."], ["PALA_ARRIBA", "⤒", "Subir pala"], ["PALA_ABAJO", "⤓", "Bajar pala"],
   ["ENCENDER_APAGAR", "⏻", "Prender / apagar"], ["AUX_1", "?", "Aux 1 · Q5"], ["AUX_2", "?", "Aux 2 · Q6"], ["AUX_3", "?", "Aux 3 · Q7"],
 ];
-const INTERRUPTOR = "ENCENDER_APAGAR", PULSO_INTERRUPTOR = 400;   // botón de un toque, nunca continuo
+const INTERRUPTOR = "ENCENDER_APAGAR", PULSO_INTERRUPTOR = 400;   // por voz no se puede mantener: pulso corto
+// botones directos: la señal dura lo que dura oprimido, sin pulso al soltar
+const DIRECTOS = new Set([INTERRUPTOR, "AUX_1", "AUX_2", "AUX_3"]);
 const ETIQUETA = Object.fromEntries(CMDS.map(([c, , t]) => [c, t.toUpperCase()]));
 ETIQUETA.DETENER = "DETENIDO";
 
@@ -453,20 +455,20 @@ $("btnLlave").addEventListener("click", () => {
 
 /* ============================ motor de movimiento ============================ */
 // mantener: continuo renovado · soltar antes del pulso: completa un pulso exacto · soltar después: alto
+// botones directos (prender/apagar y Aux): señal mientras se oprime, al soltar se corta
 const mov = { c: null, t0: 0, renovar: null };
 let plan = null;
 function marcar(c) { document.querySelectorAll(".btn[data-c]").forEach(b => b.classList.toggle("activo", b.dataset.c === c)); }
 function pararRenovar() { clearInterval(mov.renovar); mov.renovar = null; }
 function sostener(c) {
-  if (c === INTERRUPTOR) { vibrar([20, 30, 20]); mandar(c, PULSO_INTERRUPTOR); return; }
   cancelarPlan(); pararRenovar();
-  mov.c = c; mov.t0 = performance.now(); marcar(c); vibrar(12);
+  mov.c = c; mov.t0 = performance.now(); marcar(c); vibrar(DIRECTOS.has(c) ? [20, 30, 20] : 12);
   mandar(c, 0); mov.renovar = setInterval(() => mandar(c, 0), RENOVAR_MS);
 }
 function soltar(c) {
   if (mov.c !== c) return;
   const tenido = performance.now() - mov.t0; pararRenovar(); mov.c = null; marcar(null);
-  if (tenido < pulso) mandar(c, Math.round(pulso - tenido)); else mandar("DETENER", 0);
+  if (!DIRECTOS.has(c) && tenido < pulso) mandar(c, Math.round(pulso - tenido)); else mandar("DETENER", 0);
 }
 function detenerTodo(enviar = true) {
   cancelarPlan(); pararRenovar(); mov.c = null; marcar(null); sticks.forEach(s => s.soltar());
