@@ -171,6 +171,25 @@ label.sw input:checked { background:linear-gradient(135deg, var(--cian), var(--v
 .nivel i { position:absolute; left:50%; top:50%; width:20px; height:20px; margin:-10px 0 0 -10px; border-radius:50%; background:var(--cian); box-shadow:0 0 14px var(--cian); }
 code { color:var(--cian); background:rgba(0,0,0,.35); border:1px solid var(--borde); border-radius:6px; padding:1px 6px; }
 ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(--suave); } b { color:var(--texto); }
+/* ================= gemelo 3D y Ve ahí ================= */
+.escena { position:relative; height:min(40vh, 280px); margin-top:10px; border-radius:14px; overflow:hidden; border:1px solid var(--borde);
+  background:radial-gradient(circle at 50% 40%, rgba(62,230,255,.1), rgba(0,0,0,.35) 70%); }
+.escena canvas { display:block; width:100%; height:100%; }
+.etiqueta { position:absolute; left:10px; top:10px; font-size:10px; letter-spacing:2px; font-weight:800; color:var(--suave); padding:3px 9px;
+  border-radius:999px; background:rgba(7,10,18,.65); border:1px solid var(--borde); pointer-events:none; }
+.etiqueta.previa { color:var(--violeta); border-color:rgba(167,139,250,.6); box-shadow:0 0 14px rgba(167,139,250,.35); }
+.acciones { display:grid; grid-template-columns:1fr auto auto; gap:8px; margin-top:10px; }
+.acciones .grande { min-height:46px; padding:0 16px; }
+.grande.primario { border:0; background:linear-gradient(135deg, var(--cian), var(--violeta)); color:#04121a; }
+.camara.vista { aspect-ratio:16/9; }
+.camara.vista video, .camara.vista canvas { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; transform:none; }
+.camara.vista canvas { touch-action:none; cursor:crosshair; }
+.camara.vista .lectura { pointer-events:none; font-size:13px; }
+.mapaBarra { display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px; }
+.mapaBarra .grande { width:auto; min-height:42px; padding:0 14px; }
+.mapaBarra .stop.barra { width:auto; min-height:42px; padding:0 22px; margin-left:auto; }
+@media (min-width: 760px) { .dosCol.mapaCols { grid-template-columns:2fr 1fr; } }
+
 .aviso { position:fixed; left:50%; transform:translateX(-50%); top:calc(var(--cab) + env(safe-area-inset-top) + 10px); z-index:30;
   width:min(92vw, 460px); padding:12px 14px; font-size:14px; background:rgba(12,16,28,.95); }
 .aviso[hidden], .paro[hidden] { display:none; }
@@ -248,7 +267,15 @@ ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(-
           <button>Saluda con la pala</button><button>Baila</button><button>Vuelta completa a la cabina</button>
           <button>Avanza 2 segundos y sube la pala</button>
         </div>
-        <div class="respuesta"><div class="quien" id="quien">COPILOTO</div><div id="respuesta">Listo.</div><ul class="pasos" id="pasos"></ul></div>
+        <div class="respuesta"><div class="quien" id="quien">COPILOTO</div><div id="respuesta">Listo.</div>
+          <div class="escena" id="escena3d"><span class="etiqueta" id="etq3d">GEMELO 3D</span></div>
+          <div class="acciones" id="accionesPlan" hidden>
+            <button class="grande primario" id="btnEjecutar">▶ Ejecutar en la excavadora</button>
+            <button class="grande" id="btnOtraVez" title="Ver otra vez">↻</button>
+            <button class="grande" id="btnDescartar" title="Descartar">✕</button>
+          </div>
+          <ul class="pasos" id="pasos"></ul></div>
+        <label class="sw" style="margin-top:10px"><span><b>🧊 Vista previa 3D antes de mover</b><br><span class="nota">Revisa el plan en el gemelo y di “dale” o toca ▶ para ejecutarlo</span></span><input type="checkbox" id="swPrevia"></label>
       </div>
       <div class="vidrio tarjeta">
         <div class="fila"><b>🎤 Voz</b>
@@ -291,6 +318,47 @@ ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(-
     </div>
   </section>
 
+  <!-- =============================== VE AHÍ =============================== -->
+  <section id="vMapa" hidden>
+    <div class="dosCol mapaCols">
+      <div class="vidrio tarjeta">
+        <div class="fila"><b>📍 Ve ahí</b><span class="nota" style="margin:0">Toca un punto del video y la excavadora va sola</span></div>
+        <div class="chat">
+          <select class="campo" id="selCam"><option value="">Cámara trasera</option></select>
+          <button class="redondo" id="btnMapaCam" title="Cámara">📷</button>
+          <button class="redondo" id="btnVozMapa" title="Hablar">🎤</button>
+        </div>
+        <div class="camara vista" id="cajaMapa" hidden>
+          <video id="videoMapa" playsinline muted></video>
+          <canvas id="lienzoMapa"></canvas>
+          <div class="lectura" id="lecturaMapa">Cargando visión…</div>
+        </div>
+        <div class="mapaBarra">
+          <div class="seg" id="segMapa"><button data-v="destino">🎯 Destino</button><button data-v="ruta">〰️ Ruta</button></div>
+          <button class="grande" id="btnIrRuta">▶ Recorrer</button>
+          <button class="grande" id="btnLimpiarRuta">🗑</button>
+          <button class="grande" id="btnCalibrarMapa">🧭 Calibrar</button>
+          <button class="stop barra" data-stop>STOP</button>
+        </div>
+      </div>
+      <div class="vidrio tarjeta">
+        <b>Cómo se usa</b>
+        <ol>
+          <li><b>Imprime el marcador</b> y pégalo plano arriba de la excavadora, con su margen blanco.</li>
+          <li>Pon la cámara <b>arriba de la mesa viendo hacia abajo</b>: un cel en un tripié, o la lap con una webcam o con el cel como cámara.</li>
+          <li>Toca 📷. Cuando lo reconoce, se dibuja el recuadro y una flecha.</li>
+          <li><b>Calibrar</b> (solo la primera vez): avanza y gira un poquito para aprender hacia dónde es adelante.</li>
+          <li><b>Destino:</b> tocas un punto y va. <b>Ruta:</b> tocas varios puntos y ▶ Recorrer.</li>
+        </ol>
+        <table style="margin-top:8px">
+          <tr><td>Voz</td><td>“ve al centro”, “ve a la esquina de arriba a la derecha”, “regresa a casa”</td></tr>
+          <tr><td>Seguridad</td><td>Si pierde el marcador medio segundo, se detiene. Mover la cabina pide recalibrar.</td></tr>
+        </table>
+        <button class="grande" id="btnMarcador" style="margin-top:12px">🖨️ Imprimir marcador</button>
+      </div>
+    </div>
+  </section>
+
   <!-- =============================== AJUSTES =============================== -->
   <section id="vAjustes" hidden>
     <div class="dosCol">
@@ -326,6 +394,7 @@ ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(-
   <button data-v="vControl" aria-current="page"><b>🎮</b>Control</button>
   <button data-v="vIA" data-nube><b>✨</b>IA</button>
   <button data-v="vGestos" data-nube><b>✋</b>Gestos</button>
+  <button data-v="vMapa" data-nube><b>📍</b>Ve ahí</button>
   <button data-v="vAjustes"><b>⚙️</b>Ajustes</button>
 </nav>
 
@@ -382,7 +451,9 @@ document.querySelectorAll("nav button").forEach(b => {
     b.setAttribute("aria-current", "page");
     document.querySelectorAll("main section").forEach(s => s.hidden = s.id !== b.dataset.v);
     if (b.dataset.v !== "vGestos") apagarCamara();
-    if (b.dataset.v !== "vIA") apagarVoz();
+    if (b.dataset.v !== "vIA" && b.dataset.v !== "vMapa") apagarVoz();
+    if (b.dataset.v !== "vMapa") apagarMapa();
+    if (b.dataset.v === "vIA") iniciar3D();
   });
 });
 function segmento(id, valor, cb) {
@@ -432,7 +503,8 @@ setInterval(() => {
   if (Date.now() - ultimaTele > 12000) led("ledEsp", "ESP32 fuera", "mal");
 }, 2000);
 function hud(c, ms = 0) {
-  clearTimeout(finHud);
+  clearTimeout(finHud); vivo3D(c, ms);
+  if (c.startsWith("ROTACION") && mapa.cal) { mapa.cal = null; guardar("calMapa", "null"); }   // la cabina giró: el marcador ya no apunta igual
   $("cmd").textContent = ETIQUETA[c] || c; $("cmd").classList.toggle("mueve", c !== "DETENER");
   if (ms > 0 && c !== "DETENER") finHud = setTimeout(() => hud("DETENER"), ms);
 }
@@ -564,7 +636,9 @@ function planLocal(texto) {
 }
 async function copiloto(texto) {
   texto = texto.trim(); if (!texto) return;
-  $("respuesta").textContent = "Pensando…"; $("pasos").innerHTML = "";
+  const lugar = lugarMapa(texto);
+  if (lugar) { $("respuesta").textContent = "Voy para allá con la cámara de Ve ahí."; return irA([lugar.p], lugar.que); }
+  $("respuesta").textContent = "Pensando…"; $("pasos").innerHTML = ""; cerrarPrevia();
   let r = null;
   if (copilotoNube) {
     try {
@@ -575,8 +649,23 @@ async function copiloto(texto) {
   }
   if (!r) { r = planLocal(texto); $("quien").textContent = "COPILOTO · RUTINAS"; }
   $("respuesta").textContent = r.explicacion;
-  if (r.pasos.length) ejecutarPlan(r.pasos);
+  if (!r.pasos.length) return;
+  if ($("swPrevia").checked) mostrarPrevia(r.pasos); else ejecutarPlan(r.pasos);
 }
+// vista previa: el plan se ensaya en el gemelo 3D y la excavadora no se mueve hasta confirmar
+let pendiente = null;
+function mostrarPrevia(pasos) {
+  cancelarPlan(); pendiente = pasos; $("accionesPlan").hidden = false;
+  pintarPlan(pasos, 0); iniciar3D(); ensayar3D(pasos);
+}
+function cerrarPrevia() { pendiente = null; $("accionesPlan").hidden = true; g3.previa = null; }
+function ejecutarPendiente() { const p = pendiente; if (!p) return; cerrarPrevia(); ejecutarPlan(p); }
+function descartarPlan() { if (!pendiente) return; cerrarPrevia(); $("pasos").innerHTML = ""; $("respuesta").textContent += " · Descartado."; }
+$("btnEjecutar").addEventListener("click", ejecutarPendiente);
+$("btnDescartar").addEventListener("click", descartarPlan);
+$("btnOtraVez").addEventListener("click", () => { if (pendiente) ensayar3D(pendiente); });
+$("swPrevia").checked = leer("previa", "1") === "1";
+$("swPrevia").addEventListener("change", e => guardar("previa", e.target.checked ? "1" : "0"));
 function pintarPlan(pasos, i) {
   $("pasos").innerHTML = "";
   pasos.forEach((p, k) => { const li = document.createElement("li"); li.className = k < i ? "hecho" : k === i ? "actual" : "";
@@ -635,6 +724,11 @@ function frase(t) {
   $("oido").textContent = `“${t}”`;
   const o = interpretar(t);
   if (o && o.c === "DETENER") return detenerTodo();
+  const tl = sinAcentos(t.toLowerCase());
+  if (pendiente && /\b(dale|ejecuta|ejecutalo|hazlo|confirmo)\b/.test(tl)) { $("oido").textContent += " → ejecutando el plan"; return ejecutarPendiente(); }
+  if (pendiente && /\b(cancela|descarta|olvidalo)\b/.test(tl)) return descartarPlan();
+  const lugar = lugarMapa(t);
+  if (lugar) { $("oido").textContent += " → Ve ahí"; mapa.estado = `“${t}”`; return irA([lugar.p], lugar.que); }
   const directo = modoVoz === "directo" || (modoVoz === "auto" && o && t.split(/\s+/).length <= 6 && !/\b(y|luego|despues|después)\b/i.test(t) && !RUTINAS.some(([re]) => re.test(sinAcentos(t.toLowerCase()))));
   if (directo) {
     if (!o) { $("oido").textContent += " · no entendí"; return; }
@@ -648,10 +742,12 @@ function encenderVoz() {
   rec.onresult = e => frase(e.results[e.results.length - 1][0].transcript.trim());
   rec.onerror = e => { if (e.error === "not-allowed") { aviso("Permite el micrófono."); apagarVoz(); } };
   rec.onend = () => { if (vozOn) try { rec.start(); } catch {} };
-  rec.start(); vozOn = true; $("btnVoz").classList.add("on"); $("oido").textContent = "Escuchando…";
+  rec.start(); vozOn = true; botonesVoz(true); $("oido").textContent = "Escuchando…";
 }
-function apagarVoz() { if (!vozOn) return; vozOn = false; try { rec.stop(); } catch {} $("btnVoz").classList.remove("on"); }
-$("btnVoz").addEventListener("click", () => vozOn ? apagarVoz() : encenderVoz());
+function apagarVoz() { if (!vozOn) return; vozOn = false; try { rec.stop(); } catch {} botonesVoz(false); }
+function botonesVoz(on) { ["btnVoz", "btnVozMapa"].forEach(id => $(id).classList.toggle("on", on)); }
+["btnVoz", "btnVozMapa"].forEach(id => $(id).addEventListener("click", () => vozOn ? apagarVoz() : encenderVoz()));
+if (!Reconocedor) $("btnVozMapa").disabled = true;
 
 /* ============================ gestos (MediaPipe) ============================ */
 const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35";
@@ -705,6 +801,298 @@ function apagarCamara() {
 }
 $("btnCamara").addEventListener("click", () => camOn ? apagarCamara() : encenderCamara());
 
+/* ============================ gemelo digital 3D (Three.js) ============================
+   En vivo imita cada comando que pasa por el servidor (evento "control").
+   En vista previa ensaya el plan del copiloto a ×2 sin mover la excavadora real. */
+const THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js";
+const VEL3D = { avance: .45, giro: 75, cabina: 90, pala: 55 };   // unidades o grados por segundo
+const VEL_PREVIA = 2;
+const acotar = (v, a, b) => Math.max(a, Math.min(b, v));
+const rad = gr => gr * Math.PI / 180;
+const g3 = { listo: false, cargando: false, real: { x: 0, z: 0, rumbo: 0, cabina: 0, pala: 15 }, vivo: { c: null, hasta: 0 }, previa: null, p: null, t: 0 };
+function vivo3D(c, ms) { g3.vivo = c && c !== "DETENER" ? { c, hasta: performance.now() + (ms > 0 ? ms : 1000) } : { c: null, hasta: 0 }; }
+function mover3D(e, c, dt) {
+  const s = { AVANZAR: 1, RETROCEDER: -1 }[c];
+  if (s) { e.x = acotar(e.x + Math.sin(e.rumbo) * VEL3D.avance * s * dt, -5, 5); e.z = acotar(e.z + Math.cos(e.rumbo) * VEL3D.avance * s * dt, -5, 5); }
+  else if (c === "GIRO_IZQUIERDA") e.rumbo += rad(VEL3D.giro) * dt;
+  else if (c === "GIRO_DERECHA") e.rumbo -= rad(VEL3D.giro) * dt;
+  else if (c === "ROTACION_IZQUIERDA") e.cabina += rad(VEL3D.cabina) * dt;
+  else if (c === "ROTACION_DERECHA") e.cabina -= rad(VEL3D.cabina) * dt;
+  else if (c === "PALA_ARRIBA") e.pala = Math.min(60, e.pala + VEL3D.pala * dt);
+  else if (c === "PALA_ABAJO") e.pala = Math.max(-30, e.pala - VEL3D.pala * dt);
+}
+function ensayar3D(pasos) { g3.previa = { pasos, e: { ...g3.real }, k: 0, trans: 0, fin: 0 }; pintarPlan(pasos, 0); }
+function avanzarPrevia(pv, dtMs) {
+  let tt = dtMs * VEL_PREVIA;
+  while (tt > 0 && pv.k < pv.pasos.length) {
+    const p = pv.pasos[pv.k], total = p.duracion_ms + 300, paso = Math.min(tt, total - pv.trans);
+    const mueve = Math.max(0, Math.min(pv.trans + paso, p.duracion_ms) - pv.trans);   // los 300 ms de pausa no mueven
+    if (mueve > 0) mover3D(pv.e, p.comando, mueve / 1000);
+    pv.trans += paso; tt -= paso;
+    if (pv.trans >= total) { pv.k++; pv.trans = 0; if (pv.k < pv.pasos.length) pintarPlan(pv.pasos, pv.k); }
+  }
+  if (pv.k >= pv.pasos.length && !pv.fin) pv.fin = performance.now();
+}
+async function iniciar3D() {
+  if (g3.listo || g3.cargando || !NUBE) return; g3.cargando = true;
+  try {
+    const T = await import(THREE_URL), caja = $("escena3d");
+    const ren = new T.WebGLRenderer({ antialias: true, alpha: true }); ren.setPixelRatio(Math.min(2, devicePixelRatio || 1)); caja.prepend(ren.domElement);
+    const esc = new T.Scene(), cam = new T.PerspectiveCamera(42, 1, .1, 60);
+    esc.fog = new T.Fog(0x070a12, 7, 16);
+    esc.add(new T.HemisphereLight(0xbfefff, 0x1a1030, 1.1));
+    const sol = new T.DirectionalLight(0xffffff, 1.6); sol.position.set(3, 6, -2); esc.add(sol);
+    const piso = new T.GridHelper(12, 24, 0x3ee6ff, 0x1c2a44); piso.material.transparent = true; piso.material.opacity = .45; esc.add(piso);
+    const M = (color, brillo = 0) => new T.MeshStandardMaterial({ color, metalness: .35, roughness: .45, emissive: brillo ? color : 0, emissiveIntensity: brillo });
+    const B = (w, h, d, m, x, y, z, padre) => { const o = new T.Mesh(new T.BoxGeometry(w, h, d), m); o.position.set(x, y, z); padre.add(o); return o; };
+    const negro = M(0x1b1f27), amarillo = M(0xffb547), gris = M(0x3a4150), neon = M(0x3ee6ff, 1.4), vidrio = M(0x7fe6ff, .5);
+    const maquina = new T.Group(); esc.add(maquina);
+    for (const s of [-1, 1]) { B(.26, .2, 1.1, negro, s * .36, .1, 0, maquina); B(.02, .03, 1, neon, s * .5, .16, 0, maquina); }   // orugas
+    B(.56, .1, .66, gris, 0, .25, 0, maquina);
+    const cabina = new T.Group(); cabina.position.y = .3; maquina.add(cabina);
+    B(.72, .28, .78, amarillo, 0, .14, -.06, cabina);
+    B(.3, .26, .3, vidrio, .17, .41, .12, cabina);
+    B(.5, .05, .05, neon, 0, .2, -.46, cabina);
+    const brazo = new T.Group(); brazo.position.set(-.12, .22, .3); cabina.add(brazo);
+    B(.14, .14, .82, amarillo, 0, 0, .41, brazo);
+    B(.38, .22, .2, gris, 0, -.08, .86, brazo);                                                                                // pala
+    B(.36, .03, .03, neon, 0, .04, .97, brazo);
+    g3.p = { T, ren, esc, cam, maquina, cabina, brazo, foco: new T.Vector3(), meta: new T.Vector3() };
+    new ResizeObserver(() => { const w = caja.clientWidth, h = caja.clientHeight; if (!w || !h) return; ren.setSize(w, h, false); cam.aspect = w / h; cam.updateProjectionMatrix(); }).observe(caja);
+    g3.listo = true; g3.t = performance.now(); requestAnimationFrame(cuadro3D);
+  } catch { $("escena3d").hidden = true; } finally { g3.cargando = false; }
+}
+function cuadro3D(ahora) {
+  const dt = Math.min(.1, (ahora - g3.t) / 1000); g3.t = ahora;
+  const v = g3.vivo; if (v.c && ahora > v.hasta) v.c = null;
+  if (v.c) mover3D(g3.real, v.c, dt);
+  let e = g3.real, txt = v.c ? `EN VIVO · ${ETIQUETA[v.c] || v.c}` : "GEMELO EN VIVO";
+  const pv = g3.previa;
+  if (pv) {
+    avanzarPrevia(pv, dt * 1000); e = pv.e;
+    const p = pv.pasos[pv.k];
+    txt = p ? `VISTA PREVIA ×${VEL_PREVIA} · ${pv.k + 1}/${pv.pasos.length} ${ETIQUETA[p.comando] || p.comando}` : "VISTA PREVIA · ASÍ QUEDARÍA";
+    if (pv.fin && ahora - pv.fin > 1500) { g3.previa = null; pintarPlan(pv.pasos, -1); }
+  }
+  const { ren, esc, cam, maquina, cabina, brazo, foco, meta } = g3.p;
+  maquina.position.set(e.x, 0, e.z); maquina.rotation.y = e.rumbo; cabina.rotation.y = e.cabina; brazo.rotation.x = -rad(e.pala);
+  foco.lerp(meta.set(e.x, .35, e.z), .12); cam.position.set(foco.x + 2.3, 1.9, foco.z + 2.2); cam.lookAt(foco);   // 3/4 de frente: se ve la pala
+  const et = $("etq3d"); if (et.textContent !== txt) et.textContent = txt; et.classList.toggle("previa", !!pv);
+  if (!$("vIA").hidden) ren.render(esc, cam);
+  requestAnimationFrame(cuadro3D);
+}
+
+/* ============================ Ve ahí: cámara cenital + marcador ArUco ============================
+   La cámara ve la mesa desde arriba; js-aruco encuentra el marcador pegado en la excavadora
+   (posición y hacia dónde apunta) y un lazo cerrado manda pulsos cortos de giro/avance hasta llegar. */
+const ARUCO = "https://cdn.jsdelivr.net/npm/js-aruco@0.1.0/src/";
+const ID_MARCADOR = 37;   // sin simetrías: no se confunde al girar
+const mapa = { on: false, flujo: null, det: null, pose: null, rastro: [], destinos: [], ruta: [], casa: null, navegando: false, parado: false,
+  modo: leer("modoMapa", "destino"), cal: JSON.parse(leer("calMapa", "null")), estado: "", lienzo: $("lienzoMapa"), aux: document.createElement("canvas") };
+const envolver = a => Math.atan2(Math.sin(a), Math.cos(a));
+async function cargarAruco() {
+  const traer = async f => { const r = await fetch(ARUCO + f); if (!r.ok) throw new Error("no se pudo descargar " + f); return r.text(); };
+  const [cv, ar] = await Promise.all([traer("cv.js"), traer("aruco.js")]);
+  const CV = new Function("module", cv + "\nreturn CV;")({});              // son módulos CommonJS (require / module.exports)
+  const AR = new Function("module", "require", ar + "\nreturn AR;")({}, () => CV);
+  // el original exige marcadores de 20 % del ancho; desde arriba se ven más chicos
+  AR.Detector.prototype.detect = function (img) {
+    CV.grayscale(img, this.grey); CV.adaptiveThreshold(this.grey, this.thres, 2, 7);
+    this.contours = CV.findContours(this.thres, this.binary);
+    this.candidates = this.notTooNear(this.clockwiseCorners(this.findCandidates(this.contours, img.width * .08, .05, 6)), 10);
+    return this.findMarkers(this.grey, this.candidates, 49);
+  };
+  return new AR.Detector();
+}
+async function listarCamaras() {
+  try {
+    const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "videoinput");
+    const s = $("selCam"), actual = mapa.flujo?.getVideoTracks()[0]?.getSettings().deviceId || s.value;
+    s.innerHTML = ""; cams.forEach((d, i) => s.add(new Option(d.label || `Cámara ${i + 1}`, d.deviceId)));
+    if (actual) s.value = actual;
+  } catch {}
+}
+async function encenderMapa() {
+  mapa.on = true; $("cajaMapa").hidden = false; $("btnMapaCam").classList.add("on"); $("lecturaMapa").textContent = "Cargando visión…";
+  try {
+    if (!mapa.det) mapa.det = await cargarAruco();
+    const id = $("selCam").value, tam = { width: { ideal: 1280 }, height: { ideal: 720 } };
+    mapa.flujo = await navigator.mediaDevices.getUserMedia({ audio: false, video: id ? { deviceId: { exact: id }, ...tam } : { facingMode: { ideal: "environment" }, ...tam } });
+    if (!mapa.on) return apagarMapa();
+    const v = $("videoMapa"); v.srcObject = mapa.flujo; await v.play();
+    $("cajaMapa").style.aspectRatio = `${v.videoWidth} / ${v.videoHeight}`;
+    listarCamaras(); requestAnimationFrame(cicloMapa);
+  } catch (e) { aviso("No se pudo usar la cámara: " + e.message); apagarMapa(); }
+}
+function apagarMapa() {
+  if (!mapa.on && !mapa.flujo) return; mapa.on = false;
+  if (mapa.flujo) { mapa.flujo.getTracks().forEach(t => t.stop()); mapa.flujo = null; }
+  $("videoMapa").srcObject = null; $("cajaMapa").hidden = true; $("btnMapaCam").classList.remove("on");
+  if (mapa.navegando) detenerTodo();
+  mapa.pose = null;
+}
+function poseDe(c) {
+  const x = (c[0].x + c[1].x + c[2].x + c[3].x) / 4, y = (c[0].y + c[1].y + c[2].y + c[3].y) / 4;
+  const ang = Math.atan2((c[0].y + c[1].y) / 2 - y, (c[0].x + c[1].x) / 2 - x);    // hacia el borde "de arriba" del marcador
+  return { x, y, ang, lado: Math.hypot(c[1].x - c[0].x, c[1].y - c[0].y), t: performance.now(), c };
+}
+let ultimoMapa = -1;
+function cicloMapa() {
+  if (!mapa.on) return;
+  const v = $("videoMapa");
+  if (v.readyState >= 2 && v.videoWidth && v.currentTime !== ultimoMapa) {
+    ultimoMapa = v.currentTime;
+    const W = Math.min(800, v.videoWidth), H = Math.round(v.videoHeight * W / v.videoWidth), a = mapa.aux, l = mapa.lienzo;
+    if (a.width !== W || a.height !== H) { a.width = l.width = W; a.height = l.height = H; }
+    const cx = a.getContext("2d", { willReadFrequently: true }); cx.drawImage(v, 0, 0, W, H);
+    const ms = mapa.det.detect(cx.getImageData(0, 0, W, H)), m = ms.find(k => k.id === ID_MARCADOR) || ms[0];
+    if (m) {
+      const p = poseDe(m.corners), u = mapa.rastro[mapa.rastro.length - 1];
+      mapa.pose = p; if (!mapa.casa) mapa.casa = { x: p.x, y: p.y };
+      if (!u || Math.hypot(u.x - p.x, u.y - p.y) > 4) { mapa.rastro.push({ x: p.x, y: p.y }); if (mapa.rastro.length > 120) mapa.rastro.shift(); }
+    }
+    // seguridad: navegando y sin ver el marcador por medio segundo → alto inmediato
+    if (mapa.navegando && !mapa.parado && (!mapa.pose || performance.now() - mapa.pose.t > 500)) { mandar("DETENER", 0); mapa.parado = true; }
+    dibujarMapa();
+  }
+  requestAnimationFrame(cicloMapa);
+}
+function dibujarMapa() {
+  const l = mapa.lienzo, x = l.getContext("2d"), W = l.width, H = l.height, ahora = performance.now();
+  x.clearRect(0, 0, W, H); x.lineCap = "round";
+  x.strokeStyle = "rgba(62,230,255,.12)"; x.lineWidth = 1; x.beginPath();
+  for (let i = 1; i < 4; i++) { x.moveTo(W * i / 4, 0); x.lineTo(W * i / 4, H); x.moveTo(0, H * i / 4); x.lineTo(W, H * i / 4); }
+  x.stroke();
+  const circulo = (p, r) => { x.beginPath(); x.arc(p.x, p.y, r, 0, 7); };
+  if (mapa.casa) { x.setLineDash([4, 4]); x.strokeStyle = "rgba(61,255,168,.75)"; x.lineWidth = 2; circulo(mapa.casa, 14); x.stroke(); x.setLineDash([]);
+    x.fillStyle = "rgba(61,255,168,.9)"; x.font = "bold 11px system-ui"; x.fillText("CASA", mapa.casa.x - 14, mapa.casa.y - 18); }
+  if (mapa.rastro.length > 1) { x.strokeStyle = "rgba(62,230,255,.45)"; x.lineWidth = 3; x.beginPath();
+    mapa.rastro.forEach((p, i) => i ? x.lineTo(p.x, p.y) : x.moveTo(p.x, p.y)); x.stroke(); }
+  const p = mapa.pose, fresca = p && ahora - p.t < 400;
+  const puntos = (lista, color, desde) => {
+    if (!lista.length) return;
+    x.setLineDash([8, 6]); x.strokeStyle = color; x.lineWidth = 2; x.beginPath();
+    if (desde) x.moveTo(desde.x, desde.y); lista.forEach((q, i) => (i || desde) ? x.lineTo(q.x, q.y) : x.moveTo(q.x, q.y)); x.stroke(); x.setLineDash([]);
+    lista.forEach((q, i) => { x.fillStyle = color; circulo(q, 11); x.fill(); x.fillStyle = "#04121a"; x.font = "bold 12px system-ui"; x.fillText(String(i + 1), q.x - 4, q.y + 4); });
+  };
+  puntos(mapa.ruta, "rgba(167,139,250,.95)", null);
+  if (mapa.destinos.length) {
+    puntos(mapa.destinos, "rgba(62,230,255,.95)", fresca ? p : null);
+    const d = mapa.destinos[0], r = 18 + 6 * Math.sin(ahora / 180);                  // mira que late
+    x.strokeStyle = "#3ee6ff"; x.lineWidth = 2; circulo(d, r); x.stroke();
+    x.beginPath(); x.moveTo(d.x - r - 8, d.y); x.lineTo(d.x + r + 8, d.y); x.moveTo(d.x, d.y - r - 8); x.lineTo(d.x, d.y + r + 8); x.stroke();
+  }
+  if (fresca) {
+    x.shadowColor = "#3ee6ff"; x.shadowBlur = 14; x.strokeStyle = "#3ee6ff"; x.lineWidth = 3;
+    x.beginPath(); p.c.forEach((q, i) => i ? x.lineTo(q.x, q.y) : x.moveTo(q.x, q.y)); x.closePath(); x.stroke();
+    const r = mapa.cal ? p.ang + mapa.cal.offset : p.ang, L = Math.max(40, p.lado * 1.6), fx = p.x + Math.cos(r) * L, fy = p.y + Math.sin(r) * L;
+    x.strokeStyle = x.fillStyle = mapa.cal ? "#3dffa8" : "rgba(167,139,250,.95)"; x.shadowColor = x.strokeStyle; x.lineWidth = 4;
+    x.beginPath(); x.moveTo(p.x, p.y); x.lineTo(fx, fy); x.stroke();
+    x.beginPath(); x.moveTo(fx, fy); x.lineTo(fx - Math.cos(r - .5) * 14, fy - Math.sin(r - .5) * 14); x.lineTo(fx - Math.cos(r + .5) * 14, fy - Math.sin(r + .5) * 14); x.closePath(); x.fill();
+    x.shadowBlur = 0;
+  }
+  const txt = `${fresca ? "Marcador ✓" : "Sin marcador"} · ${mapa.cal ? "calibrado" : "sin calibrar"}${mapa.estado ? " · " + mapa.estado : ""}`;
+  if ($("lecturaMapa").textContent !== txt) $("lecturaMapa").textContent = txt;
+}
+// espera una detección posterior a "desde"
+async function poseNueva(desde = performance.now(), max = 1500) {
+  const fin = performance.now() + max;
+  while (performance.now() < fin) { if (mapa.pose && mapa.pose.t > desde) return mapa.pose; await esperar(40); }
+  return null;
+}
+function nuevaTarea() { cancelarPlan(); pararRenovar(); const t = { cancelado: false }; plan = t; return t; }   // STOP o cualquier control manual la cancela
+// aprende hacia dónde es "adelante" respecto al marcador, hacia dónde gira y qué tan rápido
+async function calibrarMapa(t = nuevaTarea(), suelta = true) {
+  const soltar = () => { if (suelta && plan === t) plan = null; };
+  const fallo = txt => { mapa.estado = ""; aviso(txt); soltar(); return false; };
+  if (!mapa.on) return fallo("Activa primero la cámara (📷).");
+  mapa.estado = "Calibrando: avanzo un poquito…";
+  const p0 = await poseNueva(); if (!p0) return fallo("No veo el marcador. Acomoda la cámara para que se vea la excavadora.");
+  mandar("AVANZAR", 700); await esperar(1100); if (t.cancelado) return false;
+  const p1 = await poseNueva(); if (!p1) return fallo("Perdí el marcador al avanzar.");
+  const d = Math.hypot(p1.x - p0.x, p1.y - p0.y);
+  if (d < p0.lado * .25) return fallo("No vi que avanzara. ¿Está prendido el control (⏻)?");
+  mapa.estado = "Calibrando: giro un poquito…";
+  mandar("GIRO_IZQUIERDA", 500); await esperar(900); if (t.cancelado) return false;
+  const p2 = await poseNueva(); if (!p2) return fallo("Perdí el marcador al girar.");
+  const dg = envolver(p2.ang - p1.ang);
+  if (Math.abs(dg) < .06) return fallo("No vi que girara. Revisa que el marcador esté bien pegado.");
+  mapa.cal = { offset: envolver(Math.atan2(p1.y - p0.y, p1.x - p0.x) - p0.ang), vel: d / 700, signoIzq: Math.sign(dg), giro: Math.abs(dg) / 500 };
+  guardar("calMapa", JSON.stringify(mapa.cal));
+  mandar("GIRO_DERECHA", 500); await esperar(900); if (t.cancelado) return false;   // regresa más o menos a donde estaba
+  mandar("RETROCEDER", 700); await esperar(1000);
+  mapa.estado = "Calibrado ✓"; soltar(); return true;
+}
+async function irA(puntos, que = "") {
+  if (!mapa.on) { aviso("Abre Ve ahí y activa la cámara (📷) para que pueda ver a dónde ir."); return; }
+  const t = nuevaTarea();
+  if (!mapa.cal && !await calibrarMapa(t, false)) { if (plan === t) plan = null; return; }
+  mapa.destinos = puntos.map(q => ({ x: q.x, y: q.y })); mapa.navegando = true; mapa.parado = false; vibrar(15);
+  const inicio = performance.now(); let perdidas = 0, llegue = true;
+  while (mapa.destinos.length && !t.cancelado) {
+    if (performance.now() - inicio > 90000) { aviso("Tardé demasiado; me detengo."); llegue = false; break; }
+    const p = await poseNueva(performance.now(), 900);
+    if (t.cancelado) break;
+    if (!p) { if (++perdidas > 5) { aviso("Perdí el marcador; me detengo."); llegue = false; break; } mapa.estado = "Buscando el marcador…"; continue; }
+    perdidas = 0; mapa.parado = false;
+    const o = mapa.destinos[0], dx = o.x - p.x, dy = o.y - p.y, d = Math.hypot(dx, dy);
+    if (d < Math.max(18, p.lado * .8)) { mapa.destinos.shift(); vibrar(20); continue; }
+    const err = envolver(Math.atan2(dy, dx) - (p.ang + mapa.cal.offset));
+    let c, ms;
+    if (Math.abs(err) > .35) {                                      // más de 20°: primero apuntar
+      c = Math.sign(err) === mapa.cal.signoIzq ? "GIRO_IZQUIERDA" : "GIRO_DERECHA";
+      ms = acotar(Math.abs(err) / mapa.cal.giro * .7, 180, 600); mapa.estado = `Girando ${Math.round(Math.abs(err) * 180 / Math.PI)}°`;
+    } else {
+      c = "AVANZAR"; ms = acotar(d / mapa.cal.vel * .6, 200, 800); mapa.estado = `Avanzando · faltan ${Math.round(d)} px`;
+    }
+    mandar(c, Math.round(ms)); await esperar(ms + 300);             // pulso cronometrado por el ESP32 y pausa para medir
+  }
+  mapa.navegando = false; mapa.destinos = [];
+  if (t.cancelado) mapa.estado = "Cancelado";
+  else { mandar("DETENER", 0); mapa.estado = llegue ? "Llegué 🎯" : ""; if (llegue) { aviso(`Llegué${que ? " " + que : ""} 🎯`); vibrar([30, 40, 30]); } }
+  if (plan === t) plan = null;
+}
+// "ve al centro", "ve a la esquina de arriba a la derecha", "regresa a casa"
+function lugarMapa(texto) {
+  const t = " " + sinAcentos(texto.toLowerCase()) + " ";
+  if (!mapa.on || !/\b(ve|vete|ir|vamos|anda|llevala|llevate|dirigete|muevete|regresa|vuelve)\b/.test(t)) return null;
+  if (/\b(casa|inicio|base)\b/.test(t)) return mapa.casa ? { p: mapa.casa, que: "a casa" } : null;
+  const arr = /\b(arriba|superior|fondo)\b/.test(t), aba = /\b(abajo|inferior)\b/.test(t), izq = /\bizquierda\b/.test(t), der = /\bderecha\b/.test(t);
+  if (!(arr || aba || izq || der || /\b(centro|medio)\b/.test(t))) return null;
+  const W = mapa.lienzo.width, H = mapa.lienzo.height;
+  return { p: { x: W * (izq ? .2 : der ? .8 : .5), y: H * (arr ? .2 : aba ? .8 : .5) }, que: "" };
+}
+mapa.lienzo.addEventListener("pointerdown", e => {
+  const l = mapa.lienzo, r = l.getBoundingClientRect(), s = Math.min(r.width / l.width, r.height / l.height);   // el video va con object-fit: contain
+  const px = (e.clientX - r.left - (r.width - l.width * s) / 2) / s, py = (e.clientY - r.top - (r.height - l.height * s) / 2) / s;
+  if (px < 0 || py < 0 || px > l.width || py > l.height) return;
+  if (mapa.modo === "ruta") { mapa.ruta.push({ x: px, y: py }); vibrar(10); } else irA([{ x: px, y: py }]);
+});
+function pintarModoMapa() { $("btnIrRuta").hidden = $("btnLimpiarRuta").hidden = mapa.modo !== "ruta"; }
+segmento("segMapa", mapa.modo, v => { mapa.modo = v; guardar("modoMapa", v); pintarModoMapa(); });
+pintarModoMapa();
+$("btnIrRuta").addEventListener("click", () => { if (mapa.ruta.length) irA(mapa.ruta.splice(0)); else aviso("Toca en el video los puntos de la ruta."); });
+$("btnLimpiarRuta").addEventListener("click", () => { mapa.ruta = []; mapa.rastro = []; });
+$("btnCalibrarMapa").addEventListener("click", () => calibrarMapa());
+$("btnMapaCam").addEventListener("click", () => mapa.on ? apagarMapa() : encenderMapa());
+$("selCam").addEventListener("change", () => { if (mapa.on) { apagarMapa(); encenderMapa(); } });
+// marcador ArUco imprimible (diccionario original de js-aruco: 5 filas de 2 bits)
+function marcadorSVG(id) {
+  const PAL = [[1, 0, 0, 0, 0], [1, 0, 1, 1, 1], [0, 1, 0, 0, 1], [0, 1, 1, 1, 0]];
+  let celdas = "";
+  for (let i = 0; i < 5; i++) PAL[(id >> (8 - 2 * i)) & 3].forEach((b, j) => { if (b) celdas += `<rect x="${j + 1}" y="${i + 1}" width="1.02" height="1.02" fill="#fff"/>`; });
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-1 -1 9 9" width="11cm" height="11cm" shape-rendering="crispEdges">` +
+         `<rect x="-1" y="-1" width="9" height="9" fill="#fff" stroke="#bbb" stroke-width=".03"/><rect width="7" height="7" fill="#000"/>${celdas}</svg>`;
+}
+$("btnMarcador").addEventListener("click", () => {
+  const w = open("", "_blank"); if (!w) return aviso("Permite las ventanas emergentes para imprimir el marcador.");
+  w.document.write(`<!doctype html><meta charset="utf-8"><title>Marcador de la excavadora</title><body style="font-family:system-ui;text-align:center;padding:1.5cm">` +
+    `${marcadorSVG(ID_MARCADOR)}<h2>Marcador ArUco #${ID_MARCADOR} · Excavadora de Juan</h2>` +
+    `<p style="color:#555">Recórtalo por la línea gris (deja el margen blanco) y pégalo plano arriba de la excavadora.<br>Imprime al 100 % (sin “ajustar a la página”).</p>` +
+    `<script>onload = () => print()<\/script>`);
+  w.document.close();
+});
+
 /* ============================ sensores ============================ */
 async function permisoSensores() {
   try {
@@ -743,7 +1131,7 @@ addEventListener("devicemotion", e => {
   if (!$("swAgitar").checked) return;
   const a = e.accelerationIncludingGravity; if (!a || a.x == null) return;
   if (Math.hypot(a.x, a.y, a.z) > 28 && performance.now() - ultimoAgite > 1500) {
-    ultimoAgite = performance.now(); apagarIncl(); apagarCamara(); apagarVoz(); detenerTodo(); vibrar([200, 80, 200]);
+    ultimoAgite = performance.now(); apagarIncl(); apagarCamara(); apagarVoz(); apagarMapa(); detenerTodo(); vibrar([200, 80, 200]);
     $("paro").hidden = false; setTimeout(() => $("paro").hidden = true, 800);
   }
 });
@@ -752,7 +1140,7 @@ addEventListener("devicemotion", e => {
 $("btnPantalla").addEventListener("click", async () => {
   try { if (document.fullscreenElement) await document.exitFullscreen(); else { await document.documentElement.requestFullscreen(); await screen.orientation.lock("landscape"); } } catch {}
 });
-document.addEventListener("visibilitychange", () => { if (document.hidden) { apagarCamara(); apagarVoz(); apagarIncl(); if (mov.c || plan) detenerTodo(); } });
+document.addEventListener("visibilitychange", () => { if (document.hidden) { apagarCamara(); apagarVoz(); apagarIncl(); apagarMapa(); if (mov.c || plan) detenerTodo(); } });
 if (NUBE && "serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
 pintarModo();
 conectar();
