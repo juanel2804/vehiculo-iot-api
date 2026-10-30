@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
 from app.exceptions import ErrorDominio
-from app.routers import comandos, copiloto, demos, estado, movimientos, vehiculos, ws
+from app.routers import comandos, copiloto, dataset, demos, estado, movimientos, vehiculos, ws
 from app.servicios import Servicios
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -33,6 +33,7 @@ ETIQUETAS = [
     {"name": "Movimientos individuales", "description": "Ejecutar un comando: estado + historial + WebSocket."},
     {"name": "DEMO", "description": "DEMO y sus N movimientos; ejecución y cancelación por WebSocket."},
     {"name": "Copiloto (IA)", "description": "Órdenes en lenguaje natural → secuencia de movimientos (Claude)."},
+    {"name": "Entrenamiento (IA de visión)", "description": "Fotos etiquetadas de la cámara cenital para entrenar el detector YOLO11-pose."},
     {"name": "Sistema", "description": "Salud del servicio."},
 ]
 
@@ -57,14 +58,22 @@ app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in get_setting
                    allow_methods=["GET", "POST"], allow_headers=["Content-Type", "X-API-Key"], allow_private_network=True)
 
 
-for modulo in (vehiculos, comandos, estado, movimientos, demos, copiloto):
+for modulo in (vehiculos, comandos, estado, movimientos, demos, copiloto, dataset):
     app.include_router(modulo.router)
 app.include_router(ws.router)
 
+class PaginaSinCache(StaticFiles):
+    """Siempre se revalida con el ETag: así el teléfono no se queda con una versión vieja de la página."""
+    async def get_response(self, path, scope):
+        respuesta = await super().get_response(path, scope)
+        respuesta.headers["Cache-Control"] = "no-cache"
+        return respuesta
+
+
 # Página web de control (HTML + JS que consume esta misma API y el WebSocket)
-app.mount("/control", StaticFiles(directory=Path(__file__).resolve().parent.parent / "web", html=True), name="control")
+app.mount("/control", PaginaSinCache(directory=Path(__file__).resolve().parent.parent / "web", html=True), name="control")
 # App móvil del examen 2.6: criterios del profesor con pruebas en vivo y evidencias
-app.mount("/examen", StaticFiles(directory=Path(__file__).resolve().parent.parent / "examen", html=True), name="examen")
+app.mount("/examen", PaginaSinCache(directory=Path(__file__).resolve().parent.parent / "examen", html=True), name="examen")
 
 
 @app.get("/", include_in_schema=False)

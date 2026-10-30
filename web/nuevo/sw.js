@@ -1,6 +1,6 @@
 // Service worker de la app "Excavadora de Juan": permite instalarla y abrirla rápido.
 // Solo guarda la propia página; la API y el WebSocket siempre van a la red.
-const CACHE = "excavadora-v8";
+const CACHE = "excavadora-v9";
 const ARCHIVOS = ["./", "./index.html", "./app.html", "./manifest.webmanifest", "./icono-192.png", "./icono-512.png"];
 const ALCANCE = new URL("./", self.location).pathname;
 
@@ -19,7 +19,7 @@ self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin || !url.pathname.startsWith(ALCANCE)) return;
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: "no-cache" })   // sin esto el navegador puede dar su copia HTTP vieja
       .then(r => { const copia = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copia)); return r; })
       .catch(() => caches.match(e.request).then(r => r || caches.match("./index.html")))
   );

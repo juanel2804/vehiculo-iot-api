@@ -189,6 +189,9 @@ ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(-
 .mapaBarra .grande { width:auto; min-height:42px; padding:0 14px; }
 .mapaBarra .stop.barra { width:auto; min-height:42px; padding:0 22px; margin-left:auto; }
 @media (min-width: 760px) { .dosCol.mapaCols { grid-template-columns:2fr 1fr; } }
+.entrenar { margin-top:12px; padding:10px 12px; border-radius:14px; border:1px solid var(--borde); background:rgba(0,0,0,.2); }
+.entrenar summary { cursor:pointer; }
+.grande.grabando { border-color:var(--rojo); background:rgba(255,77,94,.2); box-shadow:0 0 18px rgba(255,77,94,.4); }
 
 .aviso { position:fixed; left:50%; transform:translateX(-50%); top:calc(var(--cab) + env(safe-area-inset-top) + 10px); z-index:30;
   width:min(92vw, 460px); padding:12px 14px; font-size:14px; background:rgba(12,16,28,.95); }
@@ -340,6 +343,25 @@ ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(-
           <button class="grande" id="btnCalibrarMapa">🧭 Calibrar</button>
           <button class="stop barra" data-stop>STOP</button>
         </div>
+        <div class="mapaBarra">
+          <span class="nota" style="margin:0">Reconocer con:</span>
+          <div class="seg" id="segFuente"><button data-v="marcador">🔳 Marcador</button><button data-v="ia">🧠 IA entrenada</button></div>
+        </div>
+        <details class="entrenar">
+          <summary><b>🧠 Entrenar la IA para usarla sin marcador</b></summary>
+          <ol>
+            <li>Con el marcador puesto, toca <b>📏 Medir</b> y en el video toca <b>el frente (pala)</b>, <b>la parte de atrás</b> y <b>un costado</b> de la excavadora.</li>
+            <li>Activa <b>⏺ Captura automática</b> y manéjala por toda la mesa: varias posiciones, giros, pala arriba y abajo, otra luz, cosas alrededor. Cada foto se guarda con su etiqueta y el marcador se tapa en la foto.</li>
+            <li>Junta <b>200 o más</b>. Agrega unas cuantas <b>sin marcador</b> con <b>✍️ A mano</b> (congela el video y tocas frente, atrás y costado).</li>
+            <li>Avísale a Kai que ya están: él entrena el modelo y lo publica. Después eliges <b>🧠 IA entrenada</b> arriba.</li>
+          </ol>
+          <div class="mapaBarra">
+            <button class="grande" id="btnMedir">📏 Medir</button>
+            <button class="grande" id="btnAutoCaptura">⏺ Captura automática</button>
+            <button class="grande" id="btnManual">✍️ A mano</button>
+            <span class="led" id="ledFotos"><i></i>— fotos</span>
+          </div>
+        </details>
       </div>
       <div class="vidrio tarjeta">
         <b>Cómo se usa</b>
@@ -504,7 +526,7 @@ setInterval(() => {
 }, 2000);
 function hud(c, ms = 0) {
   clearTimeout(finHud); vivo3D(c, ms);
-  if (c.startsWith("ROTACION") && mapa.cal) { mapa.cal = null; guardar("calMapa", "null"); }   // la cabina giró: el marcador ya no apunta igual
+  if (c.startsWith("ROTACION") && mapa.cal) guardarCal(null);   // la cabina giró: el marcador ya no apunta igual
   $("cmd").textContent = ETIQUETA[c] || c; $("cmd").classList.toggle("mueve", c !== "DETENER");
   if (ms > 0 && c !== "DETENER") finHud = setTimeout(() => hud("DETENER"), ms);
 }
@@ -888,7 +910,14 @@ function cuadro3D(ahora) {
 const ARUCO = "https://cdn.jsdelivr.net/npm/js-aruco@0.1.0/src/";
 const ID_MARCADOR = 37;   // sin simetrías: no se confunde al girar
 const mapa = { on: false, flujo: null, det: null, pose: null, rastro: [], destinos: [], ruta: [], casa: null, navegando: false, parado: false,
-  modo: leer("modoMapa", "destino"), cal: JSON.parse(leer("calMapa", "null")), estado: "", lienzo: $("lienzoMapa"), aux: document.createElement("canvas") };
+  modo: leer("modoMapa", "destino"), fuente: leer("fuenteMapa", "marcador"), cal: null, estado: "", lienzo: $("lienzoMapa"), aux: document.createElement("canvas"),
+  // entrenamiento: medida de la excavadora respecto al marcador, captura automática y etiquetado a mano
+  geo: JSON.parse(leer("geoMapa", "null")), captura: false, ultimaCaptura: null, subiendo: 0, modoToque: null, toques: [], congelado: null,
+  ia: null, ocupado: false };
+// la calibración depende de qué se reconoce (marcador o IA): se guarda por separado
+const leerCal = () => JSON.parse(leer("calMapa_" + mapa.fuente, "null"));
+function guardarCal(c) { mapa.cal = c; guardar("calMapa_" + mapa.fuente, JSON.stringify(c)); }
+mapa.cal = leerCal();
 const envolver = a => Math.atan2(Math.sin(a), Math.cos(a));
 async function cargarAruco() {
   const traer = async f => { const r = await fetch(ARUCO + f); if (!r.ok) throw new Error("no se pudo descargar " + f); return r.text(); };
@@ -921,7 +950,8 @@ async function encenderMapa() {
     if (!mapa.on) return apagarMapa();
     const v = $("videoMapa"); v.srcObject = mapa.flujo; await v.play();
     $("cajaMapa").style.aspectRatio = `${v.videoWidth} / ${v.videoHeight}`;
-    listarCamaras(); requestAnimationFrame(cicloMapa);
+    listarCamaras(); contarFotos(); requestAnimationFrame(cicloMapa);
+    if (mapa.fuente === "ia" && !await cargarIA()) elegirFuente("marcador");
   } catch (e) { aviso("No se pudo usar la cámara: " + e.message); apagarMapa(); }
 }
 function apagarMapa() {
@@ -929,37 +959,44 @@ function apagarMapa() {
   if (mapa.flujo) { mapa.flujo.getTracks().forEach(t => t.stop()); mapa.flujo = null; }
   $("videoMapa").srcObject = null; $("cajaMapa").hidden = true; $("btnMapaCam").classList.remove("on");
   if (mapa.navegando) detenerTodo();
-  mapa.pose = null;
+  mapa.pose = null; mapa.modoToque = null; mapa.toques = []; mapa.congelado = null; detenerCaptura();
 }
 function poseDe(c) {
   const x = (c[0].x + c[1].x + c[2].x + c[3].x) / 4, y = (c[0].y + c[1].y + c[2].y + c[3].y) / 4;
   const ang = Math.atan2((c[0].y + c[1].y) / 2 - y, (c[0].x + c[1].x) / 2 - x);    // hacia el borde "de arriba" del marcador
   return { x, y, ang, lado: Math.hypot(c[1].x - c[0].x, c[1].y - c[0].y), t: performance.now(), c };
 }
+function nuevaPose(p) {
+  const u = mapa.rastro[mapa.rastro.length - 1];
+  mapa.pose = p; if (!mapa.casa) mapa.casa = { x: p.x, y: p.y };
+  if (!u || Math.hypot(u.x - p.x, u.y - p.y) > 4) { mapa.rastro.push({ x: p.x, y: p.y }); if (mapa.rastro.length > 120) mapa.rastro.shift(); }
+}
 let ultimoMapa = -1;
 function cicloMapa() {
   if (!mapa.on) return;
   const v = $("videoMapa");
-  if (v.readyState >= 2 && v.videoWidth && v.currentTime !== ultimoMapa) {
+  if (v.readyState >= 2 && v.videoWidth && v.currentTime !== ultimoMapa && !mapa.congelado && !mapa.ocupado) {
     ultimoMapa = v.currentTime;
     const W = Math.min(800, v.videoWidth), H = Math.round(v.videoHeight * W / v.videoWidth), a = mapa.aux, l = mapa.lienzo;
     if (a.width !== W || a.height !== H) { a.width = l.width = W; a.height = l.height = H; }
     const cx = a.getContext("2d", { willReadFrequently: true }); cx.drawImage(v, 0, 0, W, H);
-    const ms = mapa.det.detect(cx.getImageData(0, 0, W, H)), m = ms.find(k => k.id === ID_MARCADOR) || ms[0];
-    if (m) {
-      const p = poseDe(m.corners), u = mapa.rastro[mapa.rastro.length - 1];
-      mapa.pose = p; if (!mapa.casa) mapa.casa = { x: p.x, y: p.y };
-      if (!u || Math.hypot(u.x - p.x, u.y - p.y) > 4) { mapa.rastro.push({ x: p.x, y: p.y }); if (mapa.rastro.length > 120) mapa.rastro.shift(); }
+    if (mapa.fuente === "ia" && mapa.ia) {                     // la red neuronal tarda: un cuadro a la vez
+      const t = performance.now(); mapa.ocupado = true;
+      detectarIA().then(r => { if (r) nuevaPose(poseDeIA(r, t)); }).catch(() => {}).finally(() => { mapa.ocupado = false; });
+    } else {
+      const ms = mapa.det.detect(cx.getImageData(0, 0, W, H)), m = ms.find(k => k.id === ID_MARCADOR) || ms[0];
+      if (m) { nuevaPose(poseDe(m.corners)); if (mapa.captura) capturarAuto(); }
     }
-    // seguridad: navegando y sin ver el marcador por medio segundo → alto inmediato
+    // seguridad: navegando y sin ver la excavadora por medio segundo → alto inmediato
     if (mapa.navegando && !mapa.parado && (!mapa.pose || performance.now() - mapa.pose.t > 500)) { mandar("DETENER", 0); mapa.parado = true; }
-    dibujarMapa();
   }
+  dibujarMapa();
   requestAnimationFrame(cicloMapa);
 }
 function dibujarMapa() {
   const l = mapa.lienzo, x = l.getContext("2d"), W = l.width, H = l.height, ahora = performance.now();
   x.clearRect(0, 0, W, H); x.lineCap = "round";
+  if (mapa.congelado) x.drawImage(mapa.congelado, 0, 0);       // foto congelada para etiquetar a mano
   x.strokeStyle = "rgba(62,230,255,.12)"; x.lineWidth = 1; x.beginPath();
   for (let i = 1; i < 4; i++) { x.moveTo(W * i / 4, 0); x.lineTo(W * i / 4, H); x.moveTo(0, H * i / 4); x.lineTo(W, H * i / 4); }
   x.stroke();
@@ -990,8 +1027,18 @@ function dibujarMapa() {
     x.beginPath(); x.moveTo(p.x, p.y); x.lineTo(fx, fy); x.stroke();
     x.beginPath(); x.moveTo(fx, fy); x.lineTo(fx - Math.cos(r - .5) * 14, fy - Math.sin(r - .5) * 14); x.lineTo(fx - Math.cos(r + .5) * 14, fy - Math.sin(r + .5) * 14); x.closePath(); x.fill();
     x.shadowBlur = 0;
+    if (p.f) [[p.f, "#3ee6ff"], [p.a, "#a78bfa"]].forEach(([q, col]) => { x.fillStyle = col; circulo(q, 6); x.fill(); });   // puntos de la IA
+    if (mapa.geo && !p.f) {                                     // la etiqueta que se guardaría en la captura
+      const et = etiquetaAuto(p);
+      x.setLineDash([5, 5]); x.strokeStyle = mapa.captura ? "#ff4d5e" : "rgba(255,181,71,.9)"; x.lineWidth = 2;
+      x.beginPath(); et.esq.forEach((q, i) => i ? x.lineTo(q.x, q.y) : x.moveTo(q.x, q.y)); x.closePath(); x.stroke(); x.setLineDash([]);
+      x.fillStyle = "#3ee6ff"; circulo({ x: et.frente[0], y: et.frente[1] }, 5); x.fill();
+    }
   }
-  const txt = `${fresca ? "Marcador ✓" : "Sin marcador"} · ${mapa.cal ? "calibrado" : "sin calibrar"}${mapa.estado ? " · " + mapa.estado : ""}`;
+  mapa.toques.forEach((q, i) => { x.fillStyle = ["#3ee6ff", "#a78bfa", "#ffb547"][i]; circulo(q, 8); x.fill(); });
+  const nombre = mapa.fuente === "ia" ? "IA" : "marcador";
+  const visto = fresca ? (p.conf ? `IA ${Math.round(p.conf * 100)} %` : "Marcador ✓") : `Sin ${mapa.fuente === "ia" ? "detección" : nombre}`;
+  const txt = `${visto} · ${mapa.cal ? "calibrado" : "sin calibrar"}${mapa.captura ? " · ⏺ grabando" : ""}${mapa.estado ? " · " + mapa.estado : ""}`;
   if ($("lecturaMapa").textContent !== txt) $("lecturaMapa").textContent = txt;
 }
 // espera una detección posterior a "desde"
@@ -1017,8 +1064,7 @@ async function calibrarMapa(t = nuevaTarea(), suelta = true) {
   const p2 = await poseNueva(); if (!p2) return fallo("Perdí el marcador al girar.");
   const dg = envolver(p2.ang - p1.ang);
   if (Math.abs(dg) < .06) return fallo("No vi que girara. Revisa que el marcador esté bien pegado.");
-  mapa.cal = { offset: envolver(Math.atan2(p1.y - p0.y, p1.x - p0.x) - p0.ang), vel: d / 700, signoIzq: Math.sign(dg), giro: Math.abs(dg) / 500 };
-  guardar("calMapa", JSON.stringify(mapa.cal));
+  guardarCal({ offset: envolver(Math.atan2(p1.y - p0.y, p1.x - p0.x) - p0.ang), vel: d / 700, signoIzq: Math.sign(dg), giro: Math.abs(dg) / 500 });
   mandar("GIRO_DERECHA", 500); await esperar(900); if (t.cancelado) return false;   // regresa más o menos a donde estaba
   mandar("RETROCEDER", 700); await esperar(1000);
   mapa.estado = "Calibrado ✓"; soltar(); return true;
@@ -1066,6 +1112,7 @@ mapa.lienzo.addEventListener("pointerdown", e => {
   const l = mapa.lienzo, r = l.getBoundingClientRect(), s = Math.min(r.width / l.width, r.height / l.height);   // el video va con object-fit: contain
   const px = (e.clientX - r.left - (r.width - l.width * s) / 2) / s, py = (e.clientY - r.top - (r.height - l.height * s) / 2) / s;
   if (px < 0 || py < 0 || px > l.width || py > l.height) return;
+  if (mapa.modoToque) return tocarEtiqueta({ x: px, y: py });
   if (mapa.modo === "ruta") { mapa.ruta.push({ x: px, y: py }); vibrar(10); } else irA([{ x: px, y: py }]);
 });
 function pintarModoMapa() { $("btnIrRuta").hidden = $("btnLimpiarRuta").hidden = mapa.modo !== "ruta"; }
@@ -1076,6 +1123,139 @@ $("btnLimpiarRuta").addEventListener("click", () => { mapa.ruta = []; mapa.rastr
 $("btnCalibrarMapa").addEventListener("click", () => calibrarMapa());
 $("btnMapaCam").addEventListener("click", () => mapa.on ? apagarMapa() : encenderMapa());
 $("selCam").addEventListener("change", () => { if (mapa.on) { apagarMapa(); encenderMapa(); } });
+/* --- entrenamiento: fotos etiquetadas para la IA (YOLO11-pose: recuadro + frente + atrás) --- */
+// coordenadas en "lados de marcador" con los ejes del marcador ↔ píxeles de la imagen
+const aLocal = (q, p) => { const dx = q.x - p.x, dy = q.y - p.y, co = Math.cos(p.ang), si = Math.sin(p.ang); return [(dx * co + dy * si) / p.lado, (-dx * si + dy * co) / p.lado]; };
+const aImagen = (u, p) => { const co = Math.cos(p.ang), si = Math.sin(p.ang), x = u[0] * p.lado, y = u[1] * p.lado; return { x: p.x + x * co - y * si, y: p.y + x * si + y * co }; };
+function distRecta(c, f, a) { const dx = f.x - a.x, dy = f.y - a.y; return Math.abs((c.x - a.x) * dy - (c.y - a.y) * dx) / (Math.hypot(dx, dy) || 1); }
+// rectángulo de la excavadora (eje atrás→frente, medio ancho) y su recuadro alineado a la imagen
+function etiquetaDe(f, a, medio) {
+  const W = mapa.lienzo.width, H = mapa.lienzo.height, L = Math.hypot(f.x - a.x, f.y - a.y) || 1;
+  const nx = -(f.y - a.y) / L * medio, ny = (f.x - a.x) / L * medio;
+  const esq = [{ x: f.x + nx, y: f.y + ny }, { x: f.x - nx, y: f.y - ny }, { x: a.x - nx, y: a.y - ny }, { x: a.x + nx, y: a.y + ny }];
+  const xs = esq.map(q => q.x), ys = esq.map(q => q.y), m = .04 * L;
+  return { esq, caja: [Math.max(0, Math.min(...xs) - m), Math.max(0, Math.min(...ys) - m), Math.min(W, Math.max(...xs) + m), Math.min(H, Math.max(...ys) + m)],
+           frente: [f.x, f.y], atras: [a.x, a.y] };
+}
+const etiquetaAuto = p => etiquetaDe(aImagen(mapa.geo.f, p), aImagen(mapa.geo.a, p), mapa.geo.ancho * p.lado);
+// tapa el marcador con textura del alrededor para que la IA no aprenda a buscarlo
+function taparMarcador(cx, p) {
+  const W = cx.canvas.width, H = cx.canvas.height, colores = [];
+  for (let i = 0; i < 24; i++) {
+    const t = i / 24 * 2 * Math.PI, x = Math.round(p.x + Math.cos(t) * p.lado * 1.15), y = Math.round(p.y + Math.sin(t) * p.lado * 1.15);
+    if (x >= 0 && y >= 0 && x < W && y < H) colores.push(cx.getImageData(x, y, 1, 1).data);
+  }
+  if (!colores.length) colores.push([128, 128, 128]);
+  const ex = p.c.map(q => ({ x: p.x + (q.x - p.x) * 1.4, y: p.y + (q.y - p.y) * 1.4 }));   // incluye el margen blanco
+  cx.save(); cx.beginPath(); ex.forEach((q, i) => i ? cx.lineTo(q.x, q.y) : cx.moveTo(q.x, q.y)); cx.closePath(); cx.clip();
+  const xs = ex.map(q => q.x), ys = ex.map(q => q.y), b = 5, prom = [0, 1, 2].map(k => colores.reduce((s, c) => s + c[k], 0) / colores.length);
+  cx.fillStyle = `rgb(${prom.join(",")})`; cx.fillRect(Math.floor(Math.min(...xs)), Math.floor(Math.min(...ys)), Math.ceil(Math.max(...xs) - Math.min(...xs)) + 2, Math.ceil(Math.max(...ys) - Math.min(...ys)) + 2);
+  for (let y = Math.floor(Math.min(...ys)); y < Math.max(...ys); y += b) for (let x = Math.floor(Math.min(...xs)); x < Math.max(...xs); x += b) {
+    const c = colores[Math.floor(Math.random() * colores.length)], r = (Math.random() - .5) * 24;
+    cx.fillStyle = `rgb(${c[0] + r},${c[1] + r},${c[2] + r})`; cx.fillRect(x, y, b + 1, b + 1);
+  }
+  cx.restore();
+}
+function copiaCuadro() { const c = document.createElement("canvas"); c.width = mapa.aux.width; c.height = mapa.aux.height; c.getContext("2d").drawImage(mapa.aux, 0, 0); return c; }
+function capturarAuto() {
+  const p = mapa.pose, ahora = performance.now(), u = mapa.ultimaCaptura;
+  if (!p || !mapa.geo || mapa.subiendo > 2) return;
+  if (u && ahora - u.t < 600) return;
+  // solo si se movió, giró o ya pasaron 3 s (así no se juntan fotos repetidas)
+  if (u && Math.hypot(p.x - u.x, p.y - u.y) < p.lado * .5 && Math.abs(envolver(p.ang - u.ang)) < .2 && ahora - u.t < 3000) return;
+  mapa.ultimaCaptura = { x: p.x, y: p.y, ang: p.ang, t: ahora };
+  const c = copiaCuadro(); taparMarcador(c.getContext("2d", { willReadFrequently: true }), p);
+  subirFoto(c, etiquetaAuto(p), "marcador");
+}
+async function subirFoto(c, et, origen) {
+  mapa.subiendo++;
+  try {
+    const r = await fetch(`/vehiculos/${vehiculo}/dataset`, { method: "POST", headers: { "Content-Type": "application/json", "X-API-Key": leer("iot_api_key", "") },
+      body: JSON.stringify({ imagen: c.toDataURL("image/jpeg", .82), caja: et.caja.map(Math.round), frente: et.frente.map(Math.round), atras: et.atras.map(Math.round), origen }) });
+    if (r.ok) { pintarFotos((await r.json()).total); if (origen === "manual") aviso("Foto guardada ✓"); }
+    else if (r.status === 401 || r.status === 403) { detenerCaptura(); pedirLlave(); }
+    else aviso(`No se guardó la foto (HTTP ${r.status})`);
+  } catch { aviso("Sin conexión para subir la foto."); } finally { mapa.subiendo--; }
+}
+function pintarFotos(n) { led("ledFotos", `${n} fotos`, n >= 200 ? "ok" : ""); }
+async function contarFotos() { try { pintarFotos((await (await fetch(`/vehiculos/${vehiculo}/dataset`)).json()).total); } catch {} }
+function detenerCaptura() { mapa.captura = false; $("btnAutoCaptura").classList.remove("grabando"); $("btnAutoCaptura").textContent = "⏺ Captura automática"; }
+function pedirToques(modo) {
+  if (!mapa.on) return aviso("Activa primero la cámara (📷).");
+  if (mapa.modoToque === modo) { mapa.modoToque = null; mapa.toques = []; mapa.congelado = null; mapa.estado = ""; return; }   // segundo toque = cancelar
+  mapa.modoToque = modo; mapa.toques = []; mapa.estado = "Toca el frente (pala)";
+  mapa.congelado = modo === "manual" ? copiaCuadro() : null;
+}
+function tocarEtiqueta(q) {
+  mapa.toques.push(q); vibrar(10);
+  if (mapa.toques.length < 3) { mapa.estado = mapa.toques.length === 1 ? "Toca la parte de atrás" : "Toca un costado"; return; }
+  const [f, a, c] = mapa.toques, modo = mapa.modoToque, foto = mapa.congelado;
+  mapa.toques = []; mapa.modoToque = null; mapa.congelado = null; mapa.estado = "";
+  if (modo === "medir") {
+    const p = mapa.pose;
+    if (!p || p.f || performance.now() - p.t > 800) return aviso("No veo el marcador: vuelve a Medir con el marcador a la vista y sin moverla.");
+    mapa.geo = { f: aLocal(f, p), a: aLocal(a, p), ancho: distRecta(c, f, a) / p.lado };
+    guardar("geoMapa", JSON.stringify(mapa.geo)); aviso("Medida guardada ✓. Revisa que el recuadro naranja cubra la excavadora y activa la captura.");
+  } else subirFoto(foto, etiquetaDe(f, a, distRecta(c, f, a)), "manual");
+}
+$("btnMedir").addEventListener("click", () => { if (mapa.fuente !== "marcador") return aviso("Para medir, reconoce con 🔳 Marcador."); pedirToques("medir"); });
+$("btnManual").addEventListener("click", () => pedirToques("manual"));
+$("btnAutoCaptura").addEventListener("click", () => {
+  if (mapa.captura) return detenerCaptura();
+  if (!mapa.on) return aviso("Activa primero la cámara (📷).");
+  if (mapa.fuente !== "marcador") return aviso("La captura automática usa el marcador: elige 🔳 Marcador.");
+  if (!mapa.geo) return aviso("Primero toca 📏 Medir.");
+  mapa.captura = true; mapa.ultimaCaptura = null;
+  $("btnAutoCaptura").classList.add("grabando"); $("btnAutoCaptura").textContent = "⏹ Detener captura";
+});
+
+/* --- detector con la IA entrenada (ONNX en el navegador con onnxruntime-web) --- */
+const ORT = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/";
+async function cargarIA() {
+  if (mapa.ia) return true;
+  try {
+    const info = await (await fetch("modelo/info.json", { cache: "no-cache" })).json();
+    if (!info.imgsz) throw new Error("sin modelo");
+    if (!window.ort) await new Promise((ok, mal) => { const s = document.createElement("script"); s.src = ORT + "ort.min.js"; s.onload = ok; s.onerror = mal; document.head.append(s); });
+    ort.env.wasm.wasmPaths = ORT; ort.env.wasm.numThreads = 1;
+    const sesion = await ort.InferenceSession.create(`modelo/excavadora.onnx?v=${encodeURIComponent(info.fecha || "")}`, { executionProviders: ["wasm"] });
+    const lienzo = document.createElement("canvas"); lienzo.width = lienzo.height = info.imgsz;
+    mapa.ia = { sesion, S: info.imgsz, lienzo, info };
+    return true;
+  } catch { aviso("Todavía no hay una IA entrenada: junta las fotos y pídele a Kai que la entrene."); return false; }
+}
+async function detectarIA() {
+  const { sesion, S, lienzo } = mapa.ia, a = mapa.aux, W = a.width, H = a.height;
+  const k = Math.min(S / W, S / H), nw = Math.round(W * k), nh = Math.round(H * k), px = Math.round((S - nw) / 2), py = Math.round((S - nh) / 2);
+  const cx = lienzo.getContext("2d", { willReadFrequently: true });
+  cx.fillStyle = "rgb(114,114,114)"; cx.fillRect(0, 0, S, S); cx.drawImage(a, 0, 0, W, H, px, py, nw, nh);   // letterbox como en YOLO
+  const img = cx.getImageData(0, 0, S, S).data, n = S * S, buf = new Float32Array(3 * n);
+  for (let i = 0; i < n; i++) { buf[i] = img[i * 4] / 255; buf[n + i] = img[i * 4 + 1] / 255; buf[2 * n + i] = img[i * 4 + 2] / 255; }
+  const sal = await sesion.run({ [sesion.inputNames[0]]: new ort.Tensor("float32", buf, [1, 3, S, S]) });
+  const o = sal[sesion.outputNames[0]], N = o.dims[2], d = o.data;   // [1, 4 caja + 1 confianza + 2×3 puntos, N]
+  let mejor = -1, conf = .45;
+  for (let j = 0; j < N; j++) if (d[4 * N + j] > conf) { conf = d[4 * N + j]; mejor = j; }
+  if (mejor < 0) return null;
+  const v = r => d[r * N + mejor], X = q => (q - px) / k, Y = q => (q - py) / k;
+  return { caja: [X(v(0) - v(2) / 2), Y(v(1) - v(3) / 2), X(v(0) + v(2) / 2), Y(v(1) + v(3) / 2)],
+           frente: { x: X(v(5)), y: Y(v(6)) }, atras: { x: X(v(8)), y: Y(v(9)) }, conf };
+}
+function poseDeIA(r, t) {
+  const { frente: f, atras: a, caja: b } = r, L = Math.hypot(f.x - a.x, f.y - a.y);
+  return { x: (f.x + a.x) / 2, y: (f.y + a.y) / 2, ang: Math.atan2(f.y - a.y, f.x - a.x), lado: Math.max(12, L * .35), t, conf: r.conf, f, a,
+           c: [{ x: b[0], y: b[1] }, { x: b[2], y: b[1] }, { x: b[2], y: b[3] }, { x: b[0], y: b[3] }] };
+}
+function elegirFuente(v) {
+  mapa.fuente = v; guardar("fuenteMapa", v); mapa.cal = leerCal(); mapa.pose = null; mapa.rastro = [];
+  $("segFuente").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.v === v)));
+  if (v === "ia") detenerCaptura();
+}
+segmento("segFuente", mapa.fuente, async v => {
+  if (v === "ia" && !await cargarIA()) return elegirFuente("marcador");
+  if (mapa.navegando) detenerTodo();
+  elegirFuente(v);
+});
+
 // marcador ArUco imprimible (diccionario original de js-aruco: 5 filas de 2 bits)
 function marcadorSVG(id) {
   const PAL = [[1, 0, 0, 0, 0], [1, 0, 1, 1, 1], [0, 1, 0, 0, 1], [0, 1, 1, 1, 0]];
