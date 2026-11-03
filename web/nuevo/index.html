@@ -154,8 +154,10 @@ nav button[hidden] { display:none; }
 .grande.on { border-color:var(--cian); background:rgba(62,230,255,.2); }
 .camara { position:relative; margin-top:10px; border-radius:16px; overflow:hidden; background:#000; aspect-ratio:4/3; max-height:60vh; border:1px solid var(--borde); }
 .camara video { width:100%; height:100%; object-fit:cover; transform:scaleX(-1); display:block; }
-.camara .zonas { position:absolute; inset:0; display:grid; grid-template-columns:35% 30% 35%; pointer-events:none; }
-.camara .zonas div { border-right:1px dashed rgba(62,230,255,.4); } .camara .zonas div:last-child { border-right:0; }
+.camara .zonas { position:absolute; inset:0; display:grid; grid-template-columns:36% 28% 36%; grid-template-rows:36% 28% 36%; pointer-events:none; }
+.camara .zonas div { display:grid; place-items:center; font-size:22px; color:rgba(62,230,255,.55); transition:background .15s; }
+.camara .zonas [data-z="C"] { border:1px dashed rgba(62,230,255,.45); border-radius:14px; font-size:14px; }
+.camara .zonas div.activa { background:rgba(62,230,255,.2); color:#fff; border-radius:14px; }
 .camara .lectura { position:absolute; left:10px; right:10px; bottom:10px; background:rgba(7,10,18,.7); padding:8px 12px; border-radius:12px; font-weight:700; }
 table { width:100%; border-collapse:collapse; font-size:14px; }
 td { padding:7px 4px; border-bottom:1px solid var(--borde); vertical-align:top; } tr:last-child td { border-bottom:0; }
@@ -303,19 +305,17 @@ ol { margin:6px 0 0; padding-left:20px; } ol li { margin-bottom:6px; color:var(-
         <button class="grande" id="btnCamara">📷 Activar cámara</button>
         <div class="camara" id="cajaCamara" hidden>
           <video id="video" playsinline muted></video>
-          <div class="zonas"><div></div><div></div><div></div></div>
+          <div class="zonas" id="zonas"><div></div><div data-z="A">▲</div><div></div><div data-z="I">◀</div><div data-z="C">●</div><div data-z="D">▶</div><div></div><div data-z="B">▼</div><div></div></div>
           <div class="lectura" id="lectura">Cargando modelo…</div>
         </div>
-        <p class="nota">La IA de visión corre en tu teléfono. Mientras sostienes el gesto se mueve; puño o sin mano = alto.</p>
+        <p class="nota">La IA de visión corre en tu teléfono. Solo hay dos formas de mano; mueve la mano por la pantalla como un joystick. Puño, mano al centro o sin mano = alto.</p>
       </div>
       <div class="vidrio tarjeta">
         <table>
-          <tr><td>✊ Puño</td><td>Detener</td></tr>
-          <tr><td>☝️ Índice arriba</td><td>Avanzar</td></tr>
-          <tr><td>👎 Pulgar abajo</td><td>Reversa</td></tr>
-          <tr><td>🖐️ Mano abierta</td><td>Girar: mano a la izquierda o derecha</td></tr>
-          <tr><td>🤟 Te quiero</td><td>Cabina: mano a la izquierda o derecha</td></tr>
-          <tr><td>👍 / ✌️</td><td>Subir / bajar pala</td></tr>
+          <tr><td>🖐️ Mano abierta</td><td>Manejar: arriba avanza · abajo reversa · a los lados gira</td></tr>
+          <tr><td>☝️ Un dedo</td><td>Brazo: arriba sube la pala · abajo la baja · a los lados gira la cabina</td></tr>
+          <tr><td>● Mano al centro</td><td>Alto (zona de descanso)</td></tr>
+          <tr><td>✊ Puño o sin mano</td><td>Alto</td></tr>
         </table>
       </div>
     </div>
@@ -776,12 +776,31 @@ const MP = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35";
 const MODELO = "https://storage.googleapis.com/mediapipe-models/gesture_recognizer/gesture_recognizer/float16/1/gesture_recognizer.task";
 let rg = null, flujo = null, camOn = false, ultimoFrame = -1;
 const g = { cand: null, n: 0, enviado: null, sinMano: 0 };
-function gestoAComando(nombre, x) {
-  const lado = x < .35 ? "I" : x > .65 ? "D" : "C";
-  return { Closed_Fist: "DETENER", Pointing_Up: "AVANZAR", Thumb_Down: "RETROCEDER", Thumb_Up: "PALA_ARRIBA", Victory: "PALA_ABAJO",
-    Open_Palm: lado === "I" ? "GIRO_IZQUIERDA" : lado === "D" ? "GIRO_DERECHA" : "DETENER",
-    ILoveYou: lado === "I" ? "ROTACION_IZQUIERDA" : lado === "D" ? "ROTACION_DERECHA" : "DETENER" }[nombre] || null;
+// Joystick con la mano: la forma elige qué se mueve y la posición en pantalla, hacia dónde.
+// La forma se calcula con los puntos de la mano (dedo estirado = punta más lejos de la muñeca que el nudillo medio),
+// que es más estable que las categorías del clasificador.
+const GESTOS = {
+  palma: { A: "AVANZAR", B: "RETROCEDER", I: "GIRO_IZQUIERDA", D: "GIRO_DERECHA", C: "DETENER" },
+  dedo:  { A: "PALA_ARRIBA", B: "PALA_ABAJO", I: "ROTACION_IZQUIERDA", D: "ROTACION_DERECHA", C: "DETENER" },
+  puno:  { A: "DETENER", B: "DETENER", I: "DETENER", D: "DETENER", C: "DETENER" },
+};
+const FORMA_TXT = { palma: "🖐️ Mano abierta", dedo: "☝️ Un dedo", puno: "✊ Puño" };
+function formaMano(lm) {
+  const d = (a, b) => Math.hypot((lm[a].x - lm[b].x) * 4 / 3, lm[a].y - lm[b].y);   // video 4:3
+  const estirado = ([pip, tip]) => d(tip, 0) > d(pip, 0) * 1.15;
+  const [indice, ...otros] = [[6, 8], [10, 12], [14, 16], [18, 20]].map(estirado);
+  const n = otros.filter(Boolean).length + indice;
+  if (n === 0) return "puno";
+  if (indice && n === 1) return "dedo";
+  if (n >= 3) return "palma";
+  return null;
 }
+function zonaMano(lm) {
+  const dx = (1 - lm[9].x) - .5, dy = lm[9].y - .5;   // centro de la palma, en espejo como se ve en pantalla
+  if (Math.max(Math.abs(dx), Math.abs(dy)) < .14) return "C";
+  return Math.abs(dy) > Math.abs(dx) ? (dy < 0 ? "A" : "B") : (dx < 0 ? "I" : "D");
+}
+function marcarZona(z) { document.querySelectorAll("#zonas [data-z]").forEach(e => e.classList.toggle("activa", e.dataset.z === z)); }
 async function encenderCamara() {
   $("cajaCamara").hidden = false; $("lectura").textContent = "Cargando modelo…"; $("btnCamara").textContent = "📷 Apagar cámara"; $("btnCamara").classList.add("on"); camOn = true;
   try {
@@ -801,11 +820,13 @@ function cicloGestos() {
   if (v.readyState >= 2 && v.currentTime !== ultimoFrame) {
     ultimoFrame = v.currentTime;
     const r = rg.recognizeForVideo(v, performance.now());
-    let c = null, txt = "Sin mano";
-    if (r.gestures.length && r.landmarks.length) {
-      const k = r.gestures[0][0]; if (k.score >= .6) c = gestoAComando(k.categoryName, 1 - r.landmarks[0][9].x);
-      txt = c ? `${k.categoryName.replace("_", " ")} → ${ETIQUETA[c]}` : "Gesto no asignado"; g.sinMano = 0;
+    let c = null, txt = "Sin mano", z = null;
+    if (r.landmarks.length) {
+      const lm = r.landmarks[0], forma = formaMano(lm); z = zonaMano(lm);
+      if (forma) { c = GESTOS[forma][z]; txt = `${FORMA_TXT[forma]} → ${ETIQUETA[c]}`; g.sinMano = 0; }
+      else { txt = "Abre la mano o deja un dedo"; if (++g.sinMano > 8) c = "DETENER"; }
     } else if (++g.sinMano > 8) c = "DETENER";
+    marcarZona(z);
     $("lectura").textContent = txt;
     if (c) {
       if (c === g.cand) g.n++; else { g.cand = c; g.n = 1; }
