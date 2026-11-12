@@ -120,6 +120,23 @@ Ejemplo:
  "timestamp": "2026-10-14T18:00:00+00:00"}
 ```
 
+### Sala de turnos (invitados por QR, sin llave)
+
+Lógica en `app/websocket/sala.py` (en memoria; si la API se reinicia, la sala queda cerrada). Los 21 servicios REST no cambian
+y, con la sala cerrada, el WebSocket funciona igual que antes.
+
+| Quién | Mensaje que manda | Respuesta |
+|---|---|---|
+| Admin (ya mandó `auth`) | `{"tipo":"sala","accion":"abrir","segundos":60}` · acciones `ver`, `abrir`, `cerrar`, `config`, `pausar`, `reanudar`, `siguiente`, `mas`, `sacar` (`id`), `dar` (`id`) | `sala_admin` con el `codigo` de 4 letras (va en el QR) |
+| Invitado | `{"tipo":"unirse","nombre":"Ana","ficha":"<secreto del cel>","codigo":"ABCD"}` | `unido` (`id` público) o `sala_error` |
+| Invitado | `{"tipo":"salir"}` | — |
+| Admin o quien tiene el turno | `{"tipo":"demo","id":3}` · `{"tipo":"demo_cancelar"}` | eventos `demo_*` |
+
+Todos reciben `{"tipo":"sala", abierta, pausada, segundos, admin, turno:{id,nombre,conectado,restan_ms,total_ms}, fila:[…]}`.
+Reglas: un solo turno a la vez (30/60/90/120 s); al acabar un turno el servidor manda `DETENER`; quien tiene el turno y se
+desconecta tiene 8 s para volver (en la fila, 45 s); sin administrador conectado 90 s, la sala se pausa sola. Mientras un
+invitado juega, del administrador solo pasa `DETENER`; en pausa el control es suyo. Pruebas: `python -m pytest tests/test_sala.py -q`.
+
 ## Los 21 Stored Procedures y dónde se usan
 
 | SP | Endpoint |
