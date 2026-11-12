@@ -45,6 +45,7 @@ async def lifespan(app: FastAPI):
     app.state.servicios = Servicios(settings)
     log.info("API lista. RDS: %s/%s", settings.db_host, settings.db_name)
     yield
+    await app.state.servicios.salas.cerrar()
     await app.state.servicios.ejecutor.cerrar()
     app.state.servicios.db.cerrar()
 

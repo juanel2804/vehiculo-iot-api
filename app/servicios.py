@@ -12,6 +12,7 @@ from app.services.estado import EstadoService
 from app.services.movimientos import MovimientoService
 from app.services.vehiculos import VehiculoService
 from app.websocket import ConnectionManager
+from app.websocket.sala import GestorSalas
 
 
 class Servicios:
@@ -30,6 +31,7 @@ class Servicios:
                                              self.ejecutor.en_curso)
         self.demos = DemoService(self.db, demos_repo, self.vehiculos, self.comandos, self.ejecutor.en_curso)
         self.copiloto = CopilotoService(settings.anthropic_api_key)
+        self.salas = GestorSalas(self.ws, self.ejecutor)   # turnos de invitados por el WebSocket
 
 
 def get_servicios(request: Request) -> Servicios:
