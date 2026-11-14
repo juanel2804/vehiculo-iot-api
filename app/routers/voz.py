@@ -6,7 +6,8 @@ la página lo interpreta con las mismas reglas de voz del control (o con el copi
 La llave de OpenAI vive SOLO en el .env de la EC2 (OPENAI_API_KEY): nunca llega al navegador.
 """
 import httpx
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from pydantic import BaseModel, Field
 
 from app.routers.comunes import RESP_AUTH
 from app.security import exigir_llave
@@ -63,3 +64,32 @@ async def transcribir(id_vehiculo: int, request: Request):
     if r.status_code != 200:
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"El servicio de voz respondió {r.status_code}")
     return {"texto": (r.json().get("text") or "").strip(), "modelo": modelo}
+
+
+# ------------------------- texto a voz: la voz del asistente holográfico -------------------------
+URL_TTS = "https://api.openai.com/v1/audio/speech"
+ESTILO = ("Eres KAI, el asistente de inteligencia artificial de la cabina de una excavadora. "
+          "Habla en español de México, con voz serena, segura y elegante, ritmo ágil, como un asistente de IA de película.")
+
+
+class HablaIn(BaseModel):
+    texto: str = Field(min_length=1, max_length=400, examples=["Bienvenido a bordo. Todos los sistemas en línea."])
+
+
+@router.post("/habla", dependencies=[Depends(exigir_llave)], responses={**RESP_AUTH},
+             response_class=Response, summary="Texto a voz del asistente (requiere X-API-Key)",
+             description="Regresa `audio/mpeg` con la frase dicha por el asistente KAI de la cabina en realidad virtual.")
+async def hablar(id_vehiculo: int, datos: HablaIn, request: Request):
+    cfg = request.app.state.settings
+    if not cfg.openai_api_key:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "Voz no configurada (falta OPENAI_API_KEY en la EC2)")
+    try:
+        async with httpx.AsyncClient(timeout=25) as cli:
+            r = await cli.post(URL_TTS, headers={"Authorization": f"Bearer {cfg.openai_api_key}"},
+                               json={"model": cfg.openai_modelo_tts, "voice": cfg.openai_voz_tts, "input": datos.texto,
+                                     "instructions": ESTILO, "response_format": "mp3"})
+    except httpx.HTTPError:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, "No se pudo contactar el servicio de voz")
+    if r.status_code != 200:
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"El servicio de voz respondió {r.status_code}")
+    return Response(content=r.content, media_type="audio/mpeg", headers={"Cache-Control": "private, max-age=86400"})
