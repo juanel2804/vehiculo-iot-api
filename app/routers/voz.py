@@ -35,11 +35,22 @@ async def transcribir(id_vehiculo: int, request: Request):
     tipo = (request.headers.get("content-type") or "audio/webm").split(";")[0].strip()
     if not tipo.startswith("audio/"):
         raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "Manda el audio con Content-Type audio/…")
-    audio = await request.body()
+    # el límite se revisa ANTES de juntar todo en memoria: primero el Content-Length y luego mientras llega
+    demasiado = HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "Audio demasiado largo (máx. 2 MB)")
+    try:
+        if int(request.headers.get("content-length") or 0) > MAX_BYTES:
+            raise demasiado
+    except ValueError:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Content-Length inválido")
+    partes, total = [], 0
+    async for trozo in request.stream():
+        total += len(trozo)
+        if total > MAX_BYTES:
+            raise demasiado
+        partes.append(trozo)
+    audio = b"".join(partes)
     if not audio:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Audio vacío")
-    if len(audio) > MAX_BYTES:
-        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "Audio demasiado largo (máx. 2 MB)")
     ext = {"audio/ogg": "ogg", "audio/mp4": "mp4", "audio/mpeg": "mp3", "audio/wav": "wav"}.get(tipo, "webm")
     modelo = request.app.state.settings.openai_modelo_voz
     try:
