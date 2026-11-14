@@ -31,7 +31,7 @@ class Servicios:
                                              self.ejecutor.en_curso)
         self.demos = DemoService(self.db, demos_repo, self.vehiculos, self.comandos, self.ejecutor.en_curso)
         self.copiloto = CopilotoService(settings.anthropic_api_key)
-        self.salas = GestorSalas(self.ws, self.ejecutor)   # turnos de invitados por el WebSocket
+        self.salas = GestorSalas(self.ws, self.ejecutor, settings.sala_codigo)   # turnos de invitados por el WebSocket
 
 
 def get_servicios(request: Request) -> Servicios:

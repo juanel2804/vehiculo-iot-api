@@ -276,3 +276,11 @@ def test_ws_se_desconecta_quien_tiene_el_turno(api):
         assert hasta(admin, lambda m: m["tipo"] == "sala" and m["turno"])["turno"]["conectado"] is False
         admin.send_json({"tipo": "sala", "accion": "cerrar"})
         assert hasta(admin, es("sala", abierta=False))["turno"] is None
+
+
+def test_codigo_fijo_no_cambia_al_reabrir():
+    s = Sala(codigo_fijo="kx7m")
+    assert s.abrir() == "KX7M"
+    s.cerrar()
+    assert s.abrir() == "KX7M"
+    assert Sala(codigo_fijo="O1").codigo_fijo is None   # inválido: vuelve al código aleatorio

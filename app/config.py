@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     # Voz a texto para la página de realidad virtual (opcional): sin llave, /voz responde 503
     openai_api_key: str | None = None
     openai_modelo_voz: str = "gpt-4o-mini-transcribe"
+    # Sala de turnos con código FIJO (4 letras sin 0/O/1/I): el QR ya no cambia. Vacío = código nuevo cada vez
+    sala_codigo: str | None = None
 
 
 @lru_cache

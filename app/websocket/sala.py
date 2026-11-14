@@ -39,14 +39,22 @@ class Jugador:
     desconectado_en: float | None = None
 
 
+def codigo_valido(codigo) -> str | None:
+    """4 caracteres del alfabeto de la sala (sin 0/O ni 1/I); si no cumple, None."""
+    c = str(codigo or "").strip().upper()
+    return c if len(c) == 4 and all(x in ALFABETO for x in c) else None
+
+
 def limpiar_nombre(nombre) -> str:
     texto = re.sub(r"\s+", " ", "".join(c for c in str(nombre or "") if c.isprintable())).strip()[:14]
     return texto or "Jugador"
 
 
 class Sala:
-    def __init__(self, reloj=time.monotonic):
+    def __init__(self, reloj=time.monotonic, codigo_fijo: str | None = None):
         self._reloj = reloj
+        # Código fijo (SALA_CODIGO en el .env): el QR impreso sirve siempre. Sin él, uno nuevo al abrir.
+        self.codigo_fijo = codigo_valido(codigo_fijo)
         self._marca = reloj()
         self.abierta = False
         self.pausada = False
@@ -98,7 +106,7 @@ class Sala:
         if not self.abierta:
             self._vaciar()
             self.abierta = True
-            self.codigo = "".join(secrets.choice(ALFABETO) for _ in range(4))
+            self.codigo = self.codigo_fijo or "".join(secrets.choice(ALFABETO) for _ in range(4))
         return self.codigo
 
     def cerrar(self) -> bool:
@@ -271,15 +279,16 @@ class GestorSalas:
     PASO = 0.25              # s entre revisiones del reloj
     REFRESCO = 5.0           # s entre estados repetidos (por si un teléfono perdió alguno)
 
-    def __init__(self, ws, ejecutor):
+    def __init__(self, ws, ejecutor, codigo_fijo: str | None = None):
         self._ws, self._ejecutor = ws, ejecutor
+        self._codigo_fijo = codigo_fijo
         self._salas: dict[int, Sala] = {}
         self._relojes: dict[int, asyncio.Task] = {}
         self.nombre_detener: dict[int, str] = {}
 
     def sala(self, id_vehiculo: int) -> Sala:
         if id_vehiculo not in self._salas:
-            self._salas[id_vehiculo] = Sala()
+            self._salas[id_vehiculo] = Sala(codigo_fijo=self._codigo_fijo)
         return self._salas[id_vehiculo]
 
     async def publicar(self, id_vehiculo: int, detener: bool = False) -> None:
