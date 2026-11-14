@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     cors_origins: str = "https://juanel2804.github.io"
     # Copiloto con Claude (opcional): sin llave, el endpoint /copiloto responde 503
     anthropic_api_key: str | None = None
+    # Voz a texto para la página de realidad virtual (opcional): sin llave, /voz responde 503
+    openai_api_key: str | None = None
+    openai_modelo_voz: str = "gpt-4o-mini-transcribe"
 
 
 @lru_cache

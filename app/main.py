@@ -11,7 +11,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
 from app.exceptions import ErrorDominio
-from app.routers import comandos, copiloto, dataset, demos, estado, movimientos, vehiculos, ws
+from app.routers import comandos, copiloto, dataset, demos, estado, movimientos, vehiculos, voz, ws
 from app.servicios import Servicios
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -59,7 +59,7 @@ app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in get_setting
                    allow_methods=["GET", "POST"], allow_headers=["Content-Type", "X-API-Key"], allow_private_network=True)
 
 
-for modulo in (vehiculos, comandos, estado, movimientos, demos, copiloto, dataset):
+for modulo in (vehiculos, comandos, estado, movimientos, demos, copiloto, dataset, voz):
     app.include_router(modulo.router)
 app.include_router(ws.router)
 
