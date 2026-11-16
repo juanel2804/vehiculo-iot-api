@@ -19,6 +19,7 @@ Sala de turnos (invitados sin llave, de uno en uno; ver app/websocket/sala.py):
 Todos reciben {"tipo":"sala", abierta, pausada, segundos, admin, turno:{id,nombre,restan_ms,total_ms}, fila:[…]}.
 Con la sala abierta, "control" se obedece solo a quien tiene el turno; el administrador mueve cuando no hay
 turno o la sala está en pausa (su DETENER pasa siempre). Con la sala cerrada todo funciona como antes.
+Con una DEMO en curso solo pasa DETENER, y además la cancela (el STOP de cualquier página frena también una DEMO).
 """
 import asyncio
 import json
@@ -37,6 +38,7 @@ router = APIRouter()
 MAX_PULSO_MS = 10000
 ORIGEN_RAPIDO = "WEB-RAPIDO"
 MAX_FALLOS_CODIGO = 8      # intentos de entrar con un código equivocado antes de cerrar la conexión
+_TAREAS: set[asyncio.Task] = set()   # escrituras al historial en segundo plano
 
 
 def _accion_sala(sala, m: dict) -> bool:
@@ -129,6 +131,9 @@ async def monitorear_vehiculo(ws: WebSocket, id_vehiculo: int):
             elif tipo == "auth":
                 llave = str(m.get("llave", ""))
                 autorizado = secrets.compare_digest(llave.encode(), ws.app.state.settings.api_key.encode())
+                if not autorizado and es_admin:   # cambió a una llave mala: ya no cuenta como administrador presente
+                    es_admin = False
+                    sala.admin_sale()
                 if autorizado and catalogo is None:   # se carga aquí para que el primer movimiento no espere a RDS
                     catalogo = await cargar_catalogo()
                 await s.ws.enviar_a(ws, {"tipo": "auth", "ok": autorizado})
@@ -188,8 +193,9 @@ async def monitorear_vehiculo(ws: WebSocket, id_vehiculo: int):
 
             elif tipo == "control":
                 nombre = str(m.get("c", "")).upper()
+                es_detener = nombre.strip().lower() in NOMBRES_DETENER
                 if autorizado:
-                    if not sala.admin_puede_controlar() and nombre.strip().lower() not in NOMBRES_DETENER:
+                    if not sala.admin_puede_controlar() and not es_detener:
                         ahora = asyncio.get_running_loop().time()
                         if ahora - ultimo_rechazo > 1:      # el control continuo se renueva 4 veces por segundo: un aviso basta
                             ultimo_rechazo = ahora
@@ -203,8 +209,13 @@ async def monitorear_vehiculo(ws: WebSocket, id_vehiculo: int):
                         await s.ws.enviar_a(ws, {"tipo": "error", "detalle": detalle})
                     continue
                 if s.ejecutor.en_curso(id_vehiculo):
-                    await s.ws.enviar_a(ws, {"tipo": "error", "detalle": "Hay una DEMO en ejecución; cancélala primero"})
-                    continue
+                    if not es_detener:
+                        await s.ws.enviar_a(ws, {"tipo": "error", "detalle": "Hay una DEMO en ejecución; cancélala primero"})
+                        continue
+                    try:   # el STOP manda: cancela la DEMO (el ejecutor también emite el alto) y además pasa el DETENER
+                        s.ejecutor.cancelar(id_vehiculo)
+                    except NoEncontrado:
+                        pass
                 if catalogo is None:
                     catalogo = await cargar_catalogo()
                     if not tiene_control():   # el turno pudo acabarse mientras se leía el catálogo
@@ -217,9 +228,11 @@ async def monitorear_vehiculo(ws: WebSocket, id_vehiculo: int):
                 except (TypeError, ValueError):
                     ms = 0
                 await s.ws.emitir(id_vehiculo, "control", comando=comando["nombre"], ms=ms, origen=ORIGEN_RAPIDO)
-                if comando["id_comando"] != ultimo_guardado:
+                if comando["id_comando"] != ultimo_guardado and not s.ejecutor.en_curso(id_vehiculo):
                     ultimo_guardado = comando["id_comando"]
-                    asyncio.create_task(asyncio.to_thread(_guardar_movimiento, s, id_vehiculo, comando["id_comando"]))
+                    tarea = asyncio.create_task(asyncio.to_thread(_guardar_movimiento, s, id_vehiculo, comando["id_comando"]))
+                    _TAREAS.add(tarea)                       # referencia fuerte: que el recolector no la tire a medias
+                    tarea.add_done_callback(_TAREAS.discard)
 
             elif tipo == "telemetria" and autorizado:
                 datos = {k: m[k] for k in ("rssi", "ip", "comando", "uptime") if k in m}

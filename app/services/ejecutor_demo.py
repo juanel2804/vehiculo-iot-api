@@ -28,6 +28,8 @@ class EjecutorDemo:
     def __init__(self, db: Database, estado: EstadoRepository, comandos: ComandoRepository, ws: ConnectionManager):
         self._db, self._estado, self._comandos, self._ws = db, estado, comandos, ws
         self._activas: dict[int, DemoActiva] = {}
+        # nombre del comando DETENER de cada vehículo (lo llena el WebSocket al leer el catálogo; se comparte con la sala)
+        self.nombre_detener: dict[int, str] = {}
 
     # --- consulta ---
     def en_curso(self, id_vehiculo: int) -> bool:
@@ -86,17 +88,23 @@ class EjecutorDemo:
         with self._db.transaccion() as cx:
             for c in self._comandos.listar_por_vehiculo(cx, id_vehiculo):
                 if c["activo"] and c["nombre"].strip().lower() in NOMBRES_DETENER:
+                    self.nombre_detener[id_vehiculo] = c["nombre"]
                     actual = self._estado.obtener(cx, id_vehiculo)
                     conectado = bool(actual["conectado"]) if actual else False
                     self._estado.actualizar(cx, id_vehiculo, c["id_comando"], conectado)
                     return True
         return False
 
+    async def _parar_vehiculo(self, id_vehiculo: int) -> None:
+        """Alto inmediato por el canal rápido: el ESP32 no termina el pulso del movimiento que estaba haciendo."""
+        await self._ws.emitir(id_vehiculo, "control", comando=self.nombre_detener.get(id_vehiculo, "DETENER"), ms=0, origen="DEMO")
+
     async def _correr(self, id_vehiculo: int, activa: DemoActiva, movimientos: list[dict]) -> None:
         total = len(movimientos)
         id_demo = activa.id_demo
         reloj = asyncio.get_running_loop()
         guardado: asyncio.Task | None = None
+        parado = False
         try:
             await self._ws.emitir(id_vehiculo, "demo_inicio", id_demo=id_demo, total_movimientos=total)
             for mov in movimientos:
@@ -113,11 +121,17 @@ class EjecutorDemo:
                 guardado = asyncio.create_task(asyncio.to_thread(self._fijar_estado, id_vehiculo, mov["id_comando"]))
                 cancelada = await self._esperar_hasta(
                     activa.cancelar, inicio + (mov["duracion_ms"] + mov["pausa_ms"]) / 1000)
+                if cancelada:  # primero el alto físico; la escritura en RDS puede tardar
+                    await self._parar_vehiculo(id_vehiculo)
+                    parado = True
                 await guardado  # respeta el orden de escrituras; si RDS falla, la excepción termina la DEMO
                 guardado = None
                 if cancelada:
                     break
             if activa.cancelar.is_set():
+                if not parado:
+                    await self._parar_vehiculo(id_vehiculo)
+                    parado = True
                 detenido = await asyncio.to_thread(self._fijar_detener, id_vehiculo)
                 await self._ws.emitir(id_vehiculo, "demo_cancelada", id_demo=id_demo, estado_detenido=detenido)
             else:
@@ -126,6 +140,11 @@ class EjecutorDemo:
             raise
         except Exception as exc:  # falla de datos/RDS: se termina de forma controlada
             log.exception("Error en la DEMO %s del vehículo %s", id_demo, id_vehiculo)
+            if not parado:
+                try:
+                    await self._parar_vehiculo(id_vehiculo)
+                except Exception:
+                    log.exception("No se pudo mandar el alto al terminar la DEMO con error")
             if guardado is not None:  # que ninguna escritura pendiente pise el DETENER
                 await asyncio.gather(guardado, return_exceptions=True)
             try:
