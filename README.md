@@ -1,4 +1,4 @@
-# API IoT Vehículo — Práctica 2.6 (Amazon EC2 + RDS, HTTPS/WSS)
+# API IoT Vehículo · FastAPI en Amazon EC2 + RDS (HTTPS/WSS)
 
 API en **Python + FastAPI** con programación orientada a objetos que controla un vehículo IoT usando los
 **21 Stored Procedures** del esquema `vehiculo_iot` en **Amazon RDS** (MySQL). Es la misma solución de la
